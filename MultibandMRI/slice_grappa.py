@@ -31,10 +31,10 @@ class slice_grappa:
         A = get_kspace_patches(source, kernel_size=self.kernel_size, accel=self.accel)
 
         # if l2 regularization is desired 
-        if self.tik > 0.0:
-            AH = A.conj().transpose(2,3)
-            I = torch.eye(AH.shape[0], dtype=A.dtype, device=A.device)[None,None,:,:]
-            AHA_inv = torch.linalg.inv(AH@A + self.tik*I)
+        # if self.tik > 0.0:
+        AH = A.conj().transpose(2,3)
+        I = torch.eye(AH.shape[0], dtype=A.dtype, device=A.device)[None,None,:,:]
+        AHA_inv = torch.linalg.inv(AH@A + self.tik*I)
 
         # calculate the weights for each offset relative to "top left" kernel
         # point (i.e., to account for in-plane acceleration)
