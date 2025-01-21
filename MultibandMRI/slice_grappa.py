@@ -37,6 +37,7 @@ class slice_grappa:
         pe_shift = (self.kernel_size[0]-1)*self.phase_accel // 2 - 1
         for r in range(self.phase_accel):
             shift = (fe_shift, pe_shift+r)
+            print(shift)
             b = extract_point_within_multicoil_kspace_patch(calib_data, kernel_size=self.kernel_size, stride=self.stride, shift=shift)[...,None]
             if self.tik > 0.0:
                 X = torch.linalg.inv(AHA) @ (AH @ b)
@@ -50,8 +51,21 @@ class slice_grappa:
             data: zero-filled measured SMS data (1, coils, readout, phase) complex64 tensor
         '''
 
+        # nread = data.shape[2]
+        # A = extract_and_flatten_multicoil_kspace_patches(data, kernel_size=self.kernel_size, stride=self.stride, pad=True)[:,None,:,:]
+        # Y = []
+        # for r in range(self.phase_accel):
+        #     y = A @ self.weights[r]
+        #     y = y.view(self.sms, self.coils, nread, -1)
+        #     Y.append(y) 
+        # ny = sum([Y[r].shape[-1] for r in range(self.phase_accel)])
+        # out = torch.zeros((self.sms, self.coils, nread, ny), dtype=data.dtype, device=data.device)
+        # for r in range(self.phase_accel):
+        #     out[:,:,:,r::self.phase_accel] = Y[r]
+        # return out 
+
         nread = data.shape[2]
-        A = extract_and_flatten_multicoil_kspace_patches(data, kernel_size=self.kernel_size, stride=self.stride, pad=True)[:,None,:,:]
+        A = extract_and_flatten_multicoil_kspace_patches(data, kernel_size=self.kernel_size, stride=(1,1), pad=True)[:,None,:,:]
         Y = []
         for r in range(self.phase_accel):
             y = A @ self.weights[r]
