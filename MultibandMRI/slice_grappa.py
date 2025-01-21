@@ -7,7 +7,7 @@ class slice_grappa:
 
     def __init__(self,
                  calib_data: Tensor,
-                 phase_accel: int=0,
+                 phase_accel: int=1,
                  kernel_size: Tuple=(3,3),
                  tik: float=0.0):
         '''
@@ -33,7 +33,7 @@ class slice_grappa:
             I = torch.eye(AH.shape[0], dtype=A.dtype, device=A.device)[None,None,:,:]
             AHA = AH@A + self.tik*I 
         self.weights = []
-        for r in range(self.phase_accel+1):
+        for r in range(self.phase_accel):
             shift = (0,r)
             b = extract_point_within_multicoil_kspace_patch(calib_data, kernel_size=self.kernel_size, stride=self.stride, shift=shift)[...,None]
             if self.tik > 0.0:
@@ -51,12 +51,12 @@ class slice_grappa:
         nread = data.shape[2]
         A = extract_and_flatten_multicoil_kspace_patches(data, kernel_size=self.kernel_size, stride=self.stride, pad=True)[:,None,:,:]
         Y = []
-        for r in range(self.phase_accel+1):
+        for r in range(self.phase_accel):
             y = A @ self.weights[r]
             y = y.view(self.sms, self.coils, nread, -1)
             Y.append(y) 
-        ny = sum([Y[r].shape[-1] for r in range(self.phase_accel+1)])
+        ny = sum([Y[r].shape[-1] for r in range(self.phase_accel)])
         out = torch.zeros((self.sms, self.coils, nread, ny), dtype=data.dtype, device=data.device)
-        for r in range(self.phase_accel+1):
+        for r in range(self.phase_accel):
             out[:,:,:,r::self.phase_accel] = Y[r]
         return out 
