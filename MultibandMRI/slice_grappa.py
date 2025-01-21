@@ -55,8 +55,8 @@ class slice_grappa:
             y = A @ self.weights[r]
             y = y.view(self.sms, self.coils, nread, -1)
             Y.append(y) 
-        #ny = sum([Y[r].shape[-1] for r in range(self.phase_accel)])
-        out = torch.zeros((self.sms, self.coils, nread, Y[0].shape[-1]), dtype=data.dtype, device=data.device)
+        ny = sum([Y[r].shape[-1] for r in range(self.phase_accel)])
+        out = torch.zeros((self.sms, self.coils, nread, ny), dtype=data.dtype, device=data.device)
         for r in range(self.phase_accel):
-            out[:,:,:,r::self.phase_accel] = Y[r][:,:,:,r::self.phase_accel]
+            out[:,:,:,r::self.phase_accel] = Y[r]
         return out 
