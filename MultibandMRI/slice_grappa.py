@@ -74,7 +74,7 @@ class slice_grappa:
         
         # zero-fill to final matrix size 
         if self.final_matrix_size is not None:
-            rowpad = self.final_matrix_siz[0] - out.shape[2]
+            rowpad = self.final_matrix_size[0] - out.shape[2]
             rowpre = rowpad//2
             rowpst = rowpad - rowpre 
             colpad = self.final_matrix_size[1] - out.shape[3]
