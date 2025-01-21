@@ -18,6 +18,7 @@ def get_kernel_patches(
         inp: Tensor,
         kernel_size: Tuple=(5,5),
         accel: Tuple=(1,1),
+        stride: Tuple=None,
         pad=False
 ):
     if pad:
@@ -27,6 +28,7 @@ def get_kernel_patches(
         col_padding = (eff_col_kernel_size - 1)//2
         inp = torch.nn.functional.pad(inp, (col_padding, col_padding, row_padding, row_padding), mode='constant', value=0)
 
+    stride = stride if stride is not None else (1,1)
     patches = torch.nn.functional.unfold(inp, kernel_size=kernel_size, dilation=accel)
     patches = patches.transpose(1,2)
     patches = patches[:,None,:,:]
