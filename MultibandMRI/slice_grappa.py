@@ -28,6 +28,8 @@ class slice_grappa:
         
         # "source" data for slice grappa calibration is the multiband k-space 
         source = torch.sum(calib_data, dim=0, keepdim=True)
+
+        print(source.shape)
         A = get_kspace_patches(source, kernel_size=self.kernel_size, accel=self.accel)
 
         # if l2 regularization is desired 
