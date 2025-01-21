@@ -39,8 +39,8 @@ def get_kspace_patches(
         inp = torch.nn.functional.pad(inp, (pad_left, pad_right, pad_top, pad_bottom), mode='constant', value=0)
     
     # source point mask 
-    mask = torch.zeros((1, coils, kern_rows, kern_cols), dtype=torch.int32, device=inp.device)
-    mask[:,:,::accel[0],::accel[1]] = 1
+    mask = torch.zeros((1, coils, kern_rows, kern_cols), dtype=torch.float32, device=inp.device)
+    mask[:,:,::accel[0],::accel[1]] = 1.0
     mask = torch.nn.functional.unfold(mask, kernel_size=ksize)
     mask = mask[0,:,0]
     indices = torch.nonzero(mask).squeeze()
@@ -68,8 +68,8 @@ def get_kspace_points(
     ksize = (kern_rows, kern_cols)
 
     # source point mask 
-    mask = torch.zeros((1, coils, kern_rows, kern_cols), dtype=torch.int32, device=inp.device)
-    mask[:,:,shifts[0],shifts[1]] = 1
+    mask = torch.zeros((1, coils, kern_rows, kern_cols), dtype=torch.float32, device=inp.device)
+    mask[:,:,shifts[0],shifts[1]] = 1.0
     mask = torch.nn.functional.unfold(mask, kernel_size=ksize)
     mask = mask[0,:,0]
     indices = torch.nonzero(mask).squeeze()
