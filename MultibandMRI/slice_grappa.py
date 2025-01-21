@@ -60,7 +60,7 @@ class slice_grappa:
         nc = torch.numel(cv)
 
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
-        Y = [(A@w).view(self.sms, self.coils, nr, nc) for w in self.weights]
+        Y = [(A@w).view(self.sms, self.coils, nr, -1) for w in self.weights]
         out = torch.zeros_like(Y[0])
         for rfe in range(self.accel[0]):
             for rpe in range(self.accel[1]):
