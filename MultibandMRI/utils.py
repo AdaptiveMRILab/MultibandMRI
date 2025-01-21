@@ -26,7 +26,7 @@ def get_kernel_patches(
         row_padding = (eff_row_kernel_size - 1)//2 
         col_padding = (eff_col_kernel_size - 1)//2
         inp = torch.nn.functional.pad(inp, (col_padding, col_padding, row_padding, row_padding), mode='constant', value=0)
-        
+
     patches = torch.nn.functional.unfold(inp, kernel_size=kernel_size, dilation=accel)
     patches = patches.transpose(1,2)
     patches = patches[:,None,:,:]
@@ -37,7 +37,8 @@ def get_kernel_points(
         shifts: Tuple,
         accel=(1,1),
 ):
-    inp_shifted = torch.roll(inp, shifts=shifts, dims=(2,3))
+    #inp_shifted = torch.roll(inp, shifts=shifts, dims=(2,3))
+    inp_shifted = inp[:,:,shifts[0]:,shifts[1]:]
     points = torch.nn.functional.unfold(inp_shifted, kernel_size=(1,1), stride=accel)
     points = points[...,None]
     return points 
