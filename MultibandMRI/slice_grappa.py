@@ -33,10 +33,9 @@ class slice_grappa:
         # l2 regularization 
         AH = A.conj().transpose(2,3)
         _,S,_ = torch.linalg.svd(A, full_matrices=False)
-        print(S.shape)
-        print(A.shape)
+        lamda = self.tik * torch.max(torch.abs(S), dim=-1)[:,:,None,None]
         I = torch.eye(AH.shape[0], dtype=A.dtype, device=A.device)[None,None,:,:]
-        AHA_inv = torch.linalg.inv(AH@A + self.tik*I)
+        AHA_inv = torch.linalg.inv(AH@A + lamda*I)
 
         # calculate the weights for each offset relative to "top left" kernel
         # point (i.e., to account for in-plane acceleration)
