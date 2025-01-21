@@ -33,6 +33,7 @@ class slice_grappa:
         # l2 regularization 
         AH = A.conj().transpose(2,3)
         _,S,_ = torch.linalg.svd(A, full_matrices=False)
+        print(S.shape)
         Smax = torch.max(torch.abs(S), dim=-1)
         print(Smax.shape)
         lamda = self.tik * torch.max(torch.abs(S), dim=-1)[:,:,None,None]
