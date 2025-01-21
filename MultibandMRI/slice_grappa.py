@@ -33,6 +33,8 @@ class slice_grappa:
         # l2 regularization 
         AH = A.conj().transpose(2,3)
         _,S,_ = torch.linalg.svd(A, full_matrices=False)
+        Smax = torch.max(torch.abs(S), dim=-1)
+        print(Smax.shape)
         lamda = self.tik * torch.max(torch.abs(S), dim=-1)[:,:,None,None]
         I = torch.eye(AH.shape[0], dtype=A.dtype, device=A.device)[None,None,:,:]
         AHA_inv = torch.linalg.inv(AH@A + lamda*I)
