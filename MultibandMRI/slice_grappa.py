@@ -46,7 +46,7 @@ class slice_grappa:
         for rfe in range(self.accel[0]):
             for rpe in range(self.accel[1]):
                 shifts = (base_read_shift+rfe, base_phase_shift+rpe)
-                b = get_kernel_points(calib_data, shifts=shifts, accel=self.accel)
+                b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
                 print(A.shape)
                 print(b.shape)
                 self.weights.append(AHA_inv @ (AH @ b))
