@@ -16,8 +16,8 @@ def ifft2d(inp, dims=(0,1)):
 
 def get_kernel_patches(
         inp: Tensor,
-        kernel_size=(5,5),
-        accel=(1,1),
+        kernel_size: Tuple=(5,5),
+        accel: Tuple=(1,1),
         pad=False
 ):
     if pad:
@@ -35,14 +35,16 @@ def get_kernel_patches(
 def get_kernel_points(
         inp: Tensor,
         shifts: Tuple,
-        accel=(1,1),
+        kernel_size: Tuple,
+        accel: Tuple=(1,1),
 ):
-    print('Shifts:')
-    print(shifts)
-    print()
-    #inp_shifted = inp[:,:,shifts[0]:-shifts[0]:accel[0],shifts[1]:-shifts[1]:accel[1]]
-    #inp_shifted = torch.roll(inp, shifts=shifts, dims=(2,3))
-    inp_shifted = inp[:,:,shifts[0]:-shifts[0],shifts[1]:-shifts[1]]
+    rows, cols = inp.shape[2], inp.shape[3]
+    eff_row_kernel_size = (kernel_size[0] - 1) * accel[0] + 1
+    eff_col_kernel_size = (kernel_size[1] - 1) * accel[1] + 1
+    nr = rows - eff_row_kernel_size + 1
+    nc = cols - eff_col_kernel_size + 1
+    inp_shifted = torch.roll(inp, shifts=(-shifts[0], -shifts[1]), dims=(2,3))
+    inp_shifted = inp_shifted[:,:,:nr,:nc]
     points = torch.nn.functional.unfold(inp_shifted, kernel_size=(1,1), stride=(1,1))
     points = points[...,None]
     return points 
