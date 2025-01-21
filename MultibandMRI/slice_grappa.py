@@ -35,7 +35,6 @@ class slice_grappa:
         _,S,_ = torch.linalg.svd(A, full_matrices=False)
         vals = torch.max(torch.abs(S), dim=-1).values
         lamda = (self.tik * vals[:,:,None,None])**2
-        print(self.tik)
         I = torch.eye(AH.shape[0], dtype=A.dtype, device=A.device)[None,None,:,:]
         AHA_inv = torch.linalg.inv(AH@A + lamda*I)
 
