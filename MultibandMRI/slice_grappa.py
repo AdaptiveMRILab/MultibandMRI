@@ -60,7 +60,7 @@ class slice_grappa:
         # out = torch.zeros((self.sms, self.coils, nread, ny), dtype=data.dtype, device=data.device)
         # for r in range(self.phase_accel):
         #     out[:,:,:,r::self.phase_accel] = Y[r]
-        return []
+        return Y[0]
 
 
 
