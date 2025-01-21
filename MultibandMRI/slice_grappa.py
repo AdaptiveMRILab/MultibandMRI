@@ -15,8 +15,10 @@ class slice_grappa:
         '''
         Input:
             calib_data: (sms, coils, readout, phase) complex64 tensor
-            phase_accel: integer (uniform) acceleration factor 
+            accel: integer (uniform) acceleration factors along frequency and phase dimensions
             kernel_size: tuple of (readout, phase) kernel sizes
+            tik: l2 regularization parameter (scalar float)
+            final_matrix_size: (final readout, final phase) tuple of output matrix sizes 
         '''
 
         self.sms, self.coils, _, _ = calib_data.shape
