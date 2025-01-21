@@ -37,6 +37,9 @@ def get_kernel_points(
         shifts: Tuple,
         accel=(1,1),
 ):
+    print('Shifts:')
+    print(shifts)
+    print()
     #inp_shifted = inp[:,:,shifts[0]:-shifts[0]:accel[0],shifts[1]:-shifts[1]:accel[1]]
     #inp_shifted = torch.roll(inp, shifts=shifts, dims=(2,3))
     inp_shifted = inp[:,:,shifts[0]:-shifts[0],shifts[1]:-shifts[1]]
