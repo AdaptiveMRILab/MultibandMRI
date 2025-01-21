@@ -2,7 +2,7 @@ import torch
 from torch import Tensor
 from typing import Tuple 
 # from MultibandMRI import extract_and_flatten_multicoil_kspace_patches, extract_point_within_multicoil_kspace_patch
-from MultibandMRI import get_kspace_patches, get_kspace_points
+from MultibandMRI import get_kernel_patches, get_kernel_points
 
 class slice_grappa:
 
@@ -30,7 +30,7 @@ class slice_grappa:
         source = torch.sum(calib_data, dim=0, keepdim=True)
 
         print(source.shape)
-        A = get_kspace_patches(source, kernel_size=self.kernel_size, accel=self.accel)
+        A = get_kernel_patches(source, kernel_size=self.kernel_size, accel=self.accel)
 
         # if l2 regularization is desired 
         # if self.tik > 0.0:
@@ -46,14 +46,14 @@ class slice_grappa:
         for rfe in range(self.accel[0]):
             for rpe in range(self.accel[1]):
                 shifts = (base_read_shift+rfe, base_phase_shift+rpe)
-                b = get_kspace_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
+                b = get_kernel_points(calib_data, shifts=shifts, accel=self.accel)
                 print(A.shape)
                 print(b.shape)
                 self.weights.append(AHA_inv @ (AH @ b))
 
     def apply(self, data):
         nread = data.shape[2]
-        A = get_kspace_patches(data, kernel_size=self.kernel_size, accel=self.accel, pad=True)
+        A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, pad=True)
         Y = [(A@w).view(self.sms, self.coils, nread, -1) for w in self.weights]
         for n in range(len(Y)):
             print(Y.shape)
