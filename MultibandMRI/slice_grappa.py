@@ -47,16 +47,16 @@ class slice_grappa:
             for rpe in range(self.accel[1]):
                 shifts = (base_read_shift+rfe, base_phase_shift+rpe)
                 b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
-                print(A.shape)
-                print(b.shape)
                 self.weights.append(AHA_inv @ (AH @ b))
 
     def apply(self, data):
         nread = data.shape[2]
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, pad=True)
         Y = [(A@w).view(self.sms, self.coils, nread, -1) for w in self.weights]
-        for n in range(len(Y)):
-            print(Y[n].shape)
+        out = torch.zeros_like(Y[0])
+        for rfe in range(self.accel[0]):
+            for rpe in range(self.accel[1]):
+                out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,rfe::self.accel[0],rpe::self.accel[1]]
         # out = torch.zeros((self.sms, self.coils, nread, ny), dtype=data.dtype, device=data.device)
         # for r in range(self.phase_accel):
         #     out[:,:,:,r::self.phase_accel] = Y[r]
