@@ -48,9 +48,19 @@ class slice_grappa:
                 self.weights.append(AHA_inv @ (AH @ b))
 
     def apply(self, data):
-        nread = data.shape[2]
+
+        rows, cols = data.shape[2], data.shape[3]
+        eff_row_kernel_size = (self.kernel_size[0] - 1) * self.accel[0] + 1
+        eff_col_kernel_size = (self.kernel_size[1] - 1) * self.accel[1] + 1
+        nr = rows - eff_row_kernel_size + 1
+        nc = cols - eff_col_kernel_size + 1
+        rv = torch.arange(0, nr, self.accel[0])
+        cv = torch.arange(0, nc, self.accel[1])
+        nr = torch.numel(rv)
+        nc = torch.numel(cv)
+
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
-        Y = [(A@w).view(self.sms, self.coils, nread, -1) for w in self.weights]
+        Y = [(A@w).view(self.sms, self.coils, nr, nc) for w in self.weights]
         out = torch.zeros_like(Y[0])
         for rfe in range(self.accel[0]):
             for rpe in range(self.accel[1]):

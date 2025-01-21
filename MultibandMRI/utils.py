@@ -21,6 +21,7 @@ def get_kernel_patches(
         stride: Tuple=None,
         pad=False
 ):
+    
     if pad:
         eff_row_kernel_size = (kernel_size[0] - 1) * accel[0] + 1
         eff_col_kernel_size = (kernel_size[1] - 1) * accel[1] + 1
