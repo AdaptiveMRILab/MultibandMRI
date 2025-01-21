@@ -64,7 +64,7 @@ class slice_grappa:
         out = torch.zeros_like(Y[0])
         for rfe in range(self.accel[0]):
             for rpe in range(self.accel[1]):
-                out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,rfe::self.accel[0],rpe::self.accel[1]]
+                out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
         return out
 
 
