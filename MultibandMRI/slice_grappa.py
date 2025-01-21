@@ -49,16 +49,12 @@ class slice_grappa:
 
     def apply(self, data):
         nread = data.shape[2]
-        A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel, pad=True)
-        print(A)
+        A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
         Y = [(A@w).view(self.sms, self.coils, nread, -1) for w in self.weights]
         out = torch.zeros_like(Y[0])
         for rfe in range(self.accel[0]):
             for rpe in range(self.accel[1]):
                 out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,rfe::self.accel[0],rpe::self.accel[1]]
-        # out = torch.zeros((self.sms, self.coils, nread, ny), dtype=data.dtype, device=data.device)
-        # for r in range(self.phase_accel):
-        #     out[:,:,:,r::self.phase_accel] = Y[r]
         return out
 
 
