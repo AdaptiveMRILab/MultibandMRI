@@ -48,8 +48,12 @@ def get_kspace_patches(
     # get multi-coil patches of k-space from source points 
     # these patches will have size [batch_size, num_patches, coils*kernel_size[0]*kernel_size[1]]
     patches = torch.nn.functional.unfold(inp, kernel_size=ksize)
+    print()
+    print(patches.shape)
     patches = patches[:,indices,:]
-
+    print(patches.shape)
+    print() 
+    
     # return the patches with a singleton channel dimension 
     return patches[:,None,:,:]
 
