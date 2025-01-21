@@ -17,11 +17,12 @@ class slice_grappa:
             kernel_size: tuple of (readout, phase) kernel sizes
         '''
 
-        self.sms, self.coils, _, _ = calib_data.shape[0]
+        self.sms, self.coils, _, _ = calib_data.shape
         self.phase_accel = int(phase_accel) 
         self.kernel_size = kernel_size 
         self.stride = (1, self.phase_accel)
         self.tik = tik 
+        self.calibrate(calib_data)
 
     def calibrate(self, calib_data):
 
