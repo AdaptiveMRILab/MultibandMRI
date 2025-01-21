@@ -30,9 +30,11 @@ class slice_grappa:
         source = torch.sum(calib_data, dim=0, keepdim=True)
         A = get_kernel_patches(source, kernel_size=self.kernel_size, accel=self.accel)
 
-        # if l2 regularization is desired 
-        # if self.tik > 0.0:
+        # l2 regularization 
         AH = A.conj().transpose(2,3)
+        _,S,_ = torch.linalg.svd(A, full_matrices=False)
+        print(S.shape)
+        print(A.shape)
         I = torch.eye(AH.shape[0], dtype=A.dtype, device=A.device)[None,None,:,:]
         AHA_inv = torch.linalg.inv(AH@A + self.tik*I)
 
