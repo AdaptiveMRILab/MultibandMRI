@@ -38,7 +38,7 @@ def get_kernel_points(
         accel=(1,1),
 ):
     #inp_shifted = torch.roll(inp, shifts=shifts, dims=(2,3))
-    inp_shifted = inp[:,:,shifts[0]:,shifts[1]:]
+    inp_shifted = inp[:,:,shifts[0]:-shifts[0],shifts[1]:-shifts[1]]
     points = torch.nn.functional.unfold(inp_shifted, kernel_size=(1,1), stride=accel)
     points = points[...,None]
     return points 
