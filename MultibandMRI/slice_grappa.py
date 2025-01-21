@@ -51,6 +51,9 @@ class slice_grappa:
         nread = data.shape[2]
         A = extract_and_flatten_multicoil_kspace_patches(data, kernel_size=self.kernel_size, stride=(1,1), pad=True)[:,None,:,:]
         Y = []
+
+        print(A.shape) 
+        print(self.weights[0].shape)
         for r in range(self.phase_accel):
             y = A @ self.weights[r]
             y = y.view(self.sms, self.coils, nread, -1)
