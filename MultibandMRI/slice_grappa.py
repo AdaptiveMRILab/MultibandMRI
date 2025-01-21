@@ -33,8 +33,10 @@ class slice_grappa:
             I = torch.eye(AH.shape[0], dtype=A.dtype, device=A.device)[None,None,:,:]
             AHA = AH@A + self.tik*I 
         self.weights = []
+        fe_shift = self.kernel_size[0] // 2
+        pe_shift = (self.kernel_size[0]-1)*self.phase_accel // 2 - 1
         for r in range(self.phase_accel):
-            shift = (0,r)
+            shift = (fe_shift, pe_shift+r)
             b = extract_point_within_multicoil_kspace_patch(calib_data, kernel_size=self.kernel_size, stride=self.stride, shift=shift)[...,None]
             if self.tik > 0.0:
                 X = torch.linalg.inv(AHA) @ (AH @ b)
