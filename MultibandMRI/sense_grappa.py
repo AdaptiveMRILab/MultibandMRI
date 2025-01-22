@@ -59,7 +59,9 @@ class sense_grappa:
         if self.sms % 2 == 0: inp_data[:,:,::2,:] = inp_data[:,:,::2,:] * torch.exp(torch.tensor([1j], dtype=torch.complex64, device=inp_data.device))
 
         # zero-fill data 
-        data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms*inp_data.shape[2], inp_data.shape[1]), dtype=inp_data.dtype, device=inp_data.shape)
+        data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms*inp_data.shape[2], inp_data.shape[1]), dtype=inp_data.dtype, device=inp_data.device)
+        print(inp_data.shape)
+        print(data.shape)
         data[:,:,::self.sms,:] = inp_data 
 
         # figure out number of interpolated points along each dimension 
