@@ -63,28 +63,20 @@ class sense_grappa:
         data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms*inp_data.shape[2], inp_data.shape[3]), dtype=inp_data.dtype, device=inp_data.device)
         data[:,:,::self.sms,:] = inp_data 
 
-
-        print('apply(): data shape:')
-        print(data.shape)
-
         # figure out number of interpolated points along each dimension 
         nr, nc = get_num_interpolated_points(data.shape, self.kernel_size, self.accel)
 
-        print(nr, nc)
-
         # interpolate the missing points
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
-        #Y = [(A@w).view(1, self.coils, -1, nc) for w in self.weights]
-        Y = [(A@w).view(1, self.coils, nr, -1) for w in self.weights]
-        #out = torch.zeros_like(Y[0])
+        Y = [(A@w).view(1, self.coils, nr, nc) for w in self.weights]
         out = torch.zeros((1, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=inp_data.dtype, device=inp_data.device)
         for rfe, rpe in self.start_inds:
-            #out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
             out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
 
-        # # final interpolation 
-        # if self.final_matrix_size is not None:
-        #     out = interp_to_matrix_size(out, self.final_matrix_size)
+        # final interpolation 
+        if self.final_matrix_size is not None:
+            adjusted_matrix_size = (self.sms*self.final_matrix_size[0], self.final_matrix_size[1])
+            out = interp_to_matrix_size(out, self.final_matrix_size)
 
         # # data consistency
         # print(out.shape)
