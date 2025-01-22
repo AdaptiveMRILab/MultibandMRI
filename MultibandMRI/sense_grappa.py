@@ -33,6 +33,9 @@ class sense_grappa:
         data = ifft1d(data, dim=2)
         data = torch.cat([data[None,s,...] for s in range(self.sms)], dim=2)
 
+        print('calibrate(): Data shape after concatenating')
+        print(data.shape)
+
         # get the source data points 
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel)
         self.kernel_shifts, self.start_inds, self.eff_kernel_size = get_kernel_shifts(self.kernel_size, self.accel) 
@@ -61,6 +64,9 @@ class sense_grappa:
         # zero-fill data 
         data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms*inp_data.shape[2], inp_data.shape[3]), dtype=inp_data.dtype, device=inp_data.device)
         data[:,:,::self.sms,:] = inp_data 
+
+        print('apply(): Data shape after zero filling')
+        print(data.shape)
 
         # figure out number of interpolated points along each dimension 
         nr, nc = get_num_interpolated_points(data.shape, self.kernel_size, self.accel)
