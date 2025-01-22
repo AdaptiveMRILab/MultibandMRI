@@ -30,8 +30,8 @@ class split_slice_grappa:
     def calibrate(self, calib_data):
         
         # "source" data for slice grappa calibration is the multiband k-space 
-        source = torch.sum(calib_data, dim=0, keepdim=True)
-        A = get_kernel_patches(source, kernel_size=self.kernel_size, accel=self.accel)
+        #source = torch.sum(calib_data, dim=0, keepdim=True)
+        A = get_kernel_patches(calib_data, kernel_size=self.kernel_size, accel=self.accel)
         print(A.shape)
 
         # l2 regularization 
