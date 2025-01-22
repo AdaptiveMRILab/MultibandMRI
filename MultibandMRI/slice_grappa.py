@@ -38,7 +38,7 @@ class slice_grappa:
         AH = A.conj().transpose(2,3)
         _,S,_ = torch.linalg.svd(A, full_matrices=False)
         vals = torch.max(torch.abs(S), dim=-1).values
-        lamda = (self.tik * vals[:,:,None,None])**2
+        lamda = self.tik * vals[:,:,None,None]
         I = torch.eye(AH.shape[2], dtype=A.dtype, device=A.device)[None,None,:,:]
         AHA_inv = torch.linalg.inv(AH@A + lamda*I)
 
@@ -48,14 +48,6 @@ class slice_grappa:
         for shifts in self.kernel_shifts:
             b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
             self.weights.append(AHA_inv @ (AH @ b))
-
-        # base_read_shift = (self.kernel_size[0] * self.accel[0])//2 
-        # base_phase_shift = (self.kernel_size[1] * self.accel[1])//2
-        # for rfe in range(self.accel[0]):
-        #     for rpe in range(self.accel[1]):
-        #         shifts = (base_read_shift+rfe, base_phase_shift+rpe)
-        #         b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
-        #         self.weights.append(AHA_inv @ (AH @ b))
 
     def apply(self, data):
 
@@ -68,12 +60,6 @@ class slice_grappa:
         out = torch.zeros((self.sms, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=data.dtype, device=data.device)
         for rfe, rpe in self.start_inds:
             out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
-
-        # #out = torch.zeros_like(Y[0])
-        # for rfe in range(self.accel[0]):
-        #     for rpe in range(self.accel[1]):
-        #         # out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
-        #         out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
 
         # zero-fill to final matrix size 
         if self.final_matrix_size is not None:

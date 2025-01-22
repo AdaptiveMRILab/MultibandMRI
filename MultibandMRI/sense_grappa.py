@@ -42,7 +42,7 @@ class sense_grappa:
         AH = A.conj().transpose(2,3)
         _,S,_ = torch.linalg.svd(A, full_matrices=False)
         vals = torch.max(torch.abs(S), dim=-1).values
-        lamda = (self.tik * vals[:,:,None,None])**2
+        lamda = self.tik * vals[:,:,None,None]
         I = torch.eye(AH.shape[2], dtype=A.dtype, device=A.device)[None,None,:,:]
         AHA_inv = torch.linalg.inv(AH@A + lamda*I)
 

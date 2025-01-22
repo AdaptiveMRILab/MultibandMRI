@@ -38,7 +38,7 @@ class split_slice_grappa:
         AH = A.conj().transpose(2,3)
         _,S,_ = torch.linalg.svd(A, full_matrices=False)
         vals = torch.max(torch.abs(S), dim=-1).values
-        lamda = (self.tik * vals[:,:,None,None])**2
+        lamda = self.tik * vals[:,:,None,None]
         I = torch.eye(AH.shape[2], dtype=A.dtype, device=A.device)[None,None,:,:]
         AHA_inv = torch.linalg.inv(AH@A + lamda*I)
 
@@ -50,17 +50,6 @@ class split_slice_grappa:
             y = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
             b = torch.stack([torch.cat([y[d,...] * I[d,n] for n in range(self.sms)],1) for d in range(self.sms)],dim=0)
             self.weights.append(AHA_inv @ (AH @ b))
-
-        # self.weights = []
-        # base_read_shift = (self.kernel_size[0] * self.accel[0])//2 
-        # base_phase_shift = (self.kernel_size[1] * self.accel[1])//2
-        # I = torch.eye(self.sms, dtype=torch.float32, device=calib_data.device)
-        # for rfe in range(self.accel[0]):
-        #     for rpe in range(self.accel[1]):
-        #         shifts = (base_read_shift+rfe, base_phase_shift+rpe)
-        #         y = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
-        #         b = torch.stack([torch.cat([y[d,...] * I[d,n] for n in range(self.sms)],1) for d in range(self.sms)],dim=0)
-        #         self.weights.append(AHA_inv @ (AH @ b))
 
     def apply(self, data):
 
@@ -74,14 +63,6 @@ class split_slice_grappa:
         for rfe, rpe in self.start_inds:
             out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
 
-        # # interpolate the missing points
-        # A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
-        # Y = [(A@w).view(self.sms, self.coils, nr, -1) for w in self.weights]
-        # out = torch.zeros_like(Y[0])
-        # for rfe in range(self.accel[0]):
-        #     for rpe in range(self.accel[1]):
-        #         out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
-        
         # zero-fill to final matrix size 
         if self.final_matrix_size is not None:
             out = interp_to_matrix_size(out, self.final_matrix_size)
