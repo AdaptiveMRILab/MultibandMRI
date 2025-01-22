@@ -3,7 +3,7 @@ from torch import Tensor
 from typing import Tuple 
 from MultibandMRI import get_kernel_patches, get_kernel_points
 
-class slice_grappa:
+class split_slice_grappa:
 
     def __init__(self,
                  calib_data: Tensor,
@@ -32,6 +32,7 @@ class slice_grappa:
         # "source" data for slice grappa calibration is the multiband k-space 
         source = torch.sum(calib_data, dim=0, keepdim=True)
         A = get_kernel_patches(source, kernel_size=self.kernel_size, accel=self.accel)
+        print(A.shape)
 
         # l2 regularization 
         AH = A.conj().transpose(2,3)
