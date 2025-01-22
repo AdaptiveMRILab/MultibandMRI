@@ -47,10 +47,13 @@ class split_slice_grappa:
         self.weights = []
         base_read_shift = (self.kernel_size[0] * self.accel[0])//2 
         base_phase_shift = (self.kernel_size[1] * self.accel[1])//2
+        I = torch.eye(self.sms, dtype=torch.float32, device=calib_data.device)
         for rfe in range(self.accel[0]):
             for rpe in range(self.accel[1]):
                 shifts = (base_read_shift+rfe, base_phase_shift+rpe)
-                b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
+                y = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
+                print(y.shape) # [sms, coils, nobs, 1]
+                b = torch.stack([torch.cat([y[d,...] * I[d,n] for n in range(self.sms)],1) for d in range(self.sms)],dim=0)
                 print(b.shape)
                 self.weights.append(AHA_inv @ (AH @ b))
 
