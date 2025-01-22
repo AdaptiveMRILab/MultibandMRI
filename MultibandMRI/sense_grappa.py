@@ -1,7 +1,7 @@
 import torch 
 from torch import Tensor
 from typing import Tuple 
-from MultibandMRI import get_kernel_patches, get_kernel_points, get_num_interpolated_points, interp_to_matrix_size, ifft1d, fft1d
+from MultibandMRI import get_kernel_patches, get_kernel_points, get_num_interpolated_points, get_kernel_shifts, interp_to_matrix_size, ifft1d, fft1d
 
 class sense_grappa:
 
@@ -35,6 +35,7 @@ class sense_grappa:
 
         # get the source data points 
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel)
+        self.kernel_shifts, self.start_inds, self.eff_kernel_size = get_kernel_shifts(self.kernel_size, self.accel) 
 
         # l2 regularization 
         AH = A.conj().transpose(2,3)
