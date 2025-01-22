@@ -73,11 +73,11 @@ def interp_to_matrix_size(inp: Tensor,
 ):
 
     rowpad = matrix_size[0] - inp.shape[2]
-    rowpre = rowpad//2
-    rowpst = rowpad - rowpre 
+    rowpst = rowpad//2
+    rowpre = rowpad - rowpst 
     colpad = matrix_size[1] - inp.shape[3]
-    colpre = colpad//2
-    colpst = colpad - colpre 
+    colpst = colpad//2
+    colpre = colpad - colpst
     return torch.nn.functional.pad(inp, (colpre, colpst, rowpre, rowpst), mode='constant', value=0)
         
 def get_num_interpolated_points(shp: Tuple,

@@ -79,7 +79,7 @@ class sense_grappa:
             out = interp_to_matrix_size(out, adjusted_matrix_size)
 
         # data consistency
-        # out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
+        out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
 
         return out
 
