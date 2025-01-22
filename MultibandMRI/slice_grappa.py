@@ -1,7 +1,7 @@
 import torch 
 from torch import Tensor
 from typing import Tuple 
-from MultibandMRI import get_kernel_patches, get_kernel_points, get_num_interpolated_points, interp_to_matrix_size
+from MultibandMRI import get_kernel_patches, get_kernel_points, get_kernel_shifts, get_num_interpolated_points, interp_to_matrix_size
 
 class slice_grappa:
 
@@ -32,6 +32,7 @@ class slice_grappa:
         # "source" data for slice grappa calibration is the multiband k-space 
         source = torch.sum(calib_data, dim=0, keepdim=True)
         A = get_kernel_patches(source, kernel_size=self.kernel_size, accel=self.accel)
+        self.kernel_shifts, self.start_inds, self.eff_kernel_size = get_kernel_shifts(self.kernel_size, self.accel) 
 
         # l2 regularization 
         AH = A.conj().transpose(2,3)
@@ -44,13 +45,17 @@ class slice_grappa:
         # calculate the weights for each offset relative to "top left" kernel
         # point (i.e., to account for in-plane acceleration)
         self.weights = []
-        base_read_shift = (self.kernel_size[0] * self.accel[0])//2 
-        base_phase_shift = (self.kernel_size[1] * self.accel[1])//2
-        for rfe in range(self.accel[0]):
-            for rpe in range(self.accel[1]):
-                shifts = (base_read_shift+rfe, base_phase_shift+rpe)
-                b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
-                self.weights.append(AHA_inv @ (AH @ b))
+        for shifts in self.kernel_shifts:
+            b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
+            self.weights.append(AHA_inv @ (AH @ b))
+
+        # base_read_shift = (self.kernel_size[0] * self.accel[0])//2 
+        # base_phase_shift = (self.kernel_size[1] * self.accel[1])//2
+        # for rfe in range(self.accel[0]):
+        #     for rpe in range(self.accel[1]):
+        #         shifts = (base_read_shift+rfe, base_phase_shift+rpe)
+        #         b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
+        #         self.weights.append(AHA_inv @ (AH @ b))
 
     def apply(self, data):
 
@@ -60,11 +65,16 @@ class slice_grappa:
         # interpolate the missing points
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
         Y = [(A@w).view(self.sms, self.coils, nr, -1) for w in self.weights]
-        out = torch.zeros_like(Y[0])
-        for rfe in range(self.accel[0]):
-            for rpe in range(self.accel[1]):
-                out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
-        
+        out = torch.zeros((self.sms, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=data.dtype, device=data.device)
+        for rfe, rpe in self.start_inds:
+            out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
+
+        # #out = torch.zeros_like(Y[0])
+        # for rfe in range(self.accel[0]):
+        #     for rpe in range(self.accel[1]):
+        #         # out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
+        #         out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
+
         # zero-fill to final matrix size 
         if self.final_matrix_size is not None:
             out = interp_to_matrix_size(out, self.final_matrix_size)

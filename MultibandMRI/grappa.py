@@ -48,24 +48,23 @@ class grappa:
             b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
             self.weights.append(AHA_inv @ (AH @ b))
 
-    def apply(self, data, tmp_shifts=(0,0)):
+    def apply(self, data):
 
         # figure out number of interpolated points along each dimension 
         nr, nc = get_num_interpolated_points(data.shape, self.kernel_size, self.accel)
 
         # interpolate the missing points
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
-        Y = [(A@w).view(self.sms, self.coils, nr, -1) for w in self.weights]
-        out = torch.zeros_like(Y[0])
+        Y = [(A@w).view(self.sms, self.coils, nr, nc) for w in self.weights]
+        out = torch.zeros((self.sms, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=data.dtype, device=data.device)
         for rfe, rpe in self.start_inds:
-            out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
+            out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
 
         # final interpolation 
         if self.final_matrix_size is not None:
             out = interp_to_matrix_size(out, self.final_matrix_size)
 
         # data consistency
-        out = torch.roll(out, shifts=tmp_shifts, dims=(2,3))
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
 
         return out
