@@ -76,7 +76,7 @@ class sense_grappa:
         # final interpolation 
         if self.final_matrix_size is not None:
             adjusted_matrix_size = (self.sms*self.final_matrix_size[0], self.final_matrix_size[1])
-            out = interp_to_matrix_size(out, self.final_matrix_size)
+            out = interp_to_matrix_size(out, adjusted_matrix_size)
 
         # # data consistency
         # print(out.shape)
