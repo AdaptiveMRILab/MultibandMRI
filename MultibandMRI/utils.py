@@ -51,3 +51,46 @@ def get_kernel_points(
     points = torch.nn.functional.unfold(inp_shifted, kernel_size=(1,1), stride=(1,1))
     points = points[...,None]
     return points 
+
+def get_kernel_shifts(kernel_size: Tuple,
+                      accel: Tuple
+):
+    eff_row_kernel_size = (kernel_size[0] - 1) * accel[0] + 1
+    eff_col_kernel_size = (kernel_size[1] - 1) * accel[1] + 1
+    base_read_shift = eff_row_kernel_size // 2 
+    base_phase_shift = eff_col_kernel_size // 2
+    shifts = []
+    start_inds = []
+    for rfe in range(accel[0]):
+        for rpe in range(accel[1]):
+            shifts.append((base_read_shift + rfe, base_phase_shift + rpe))
+            start_inds.append((rfe, rpe))
+    return shifts, start_inds
+
+def interp_to_matrix_size(inp: Tensor,
+                          matrix_size:Tuple
+):
+
+    rowpad = matrix_size[0] - inp.shape[2]
+    rowpre = rowpad//2
+    rowpst = rowpad - rowpre 
+    colpad = matrix_size[1] - inp.shape[3]
+    colpre = colpad//2
+    colpst = colpad - colpre 
+    return torch.nn.functional.pad(inp, (colpre, colpst, rowpre, rowpst), mode='constant', value=0)
+        
+def get_num_interpolated_points(shp: Tuple,
+                                kernel_size: Tuple,
+                                accel: Tuple
+):
+    
+    rows, cols = shp[2], shp[3]
+    eff_row_kernel_size = (kernel_size[0] - 1) * accel[0] + 1
+    eff_col_kernel_size = (kernel_size[1] - 1) * accel[1] + 1
+    nr = rows - eff_row_kernel_size + 1
+    nc = cols - eff_col_kernel_size + 1
+    rv = torch.arange(0, nr, accel[0])
+    cv = torch.arange(0, nc, accel[1])
+    nr = torch.numel(rv)
+    nc = torch.numel(cv)
+    return nr, nc 
