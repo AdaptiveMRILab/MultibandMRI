@@ -33,18 +33,13 @@ class grappa:
         A = get_kernel_patches(calib_data, kernel_size=self.kernel_size, accel=self.accel)
         self.kernel_shifts, self.start_inds = get_kernel_shifts(self.kernel_size, self.accel) 
 
-        print(A.shape)
-
         # l2 regularization 
         AH = A.conj().transpose(2,3)
         _,S,_ = torch.linalg.svd(A, full_matrices=False)
         vals = torch.max(torch.abs(S), dim=-1).values
         lamda = (self.tik * vals[:,:,None,None])**2
-        I = torch.eye(AH.shape[0], dtype=A.dtype, device=A.device)[None,None,:,:]
-        print(I.shape)
+        I = torch.eye(AH.shape[2], dtype=A.dtype, device=A.device)[None,None,:,:]
         AHA_inv = torch.linalg.inv(AH@A + lamda*I)
-
-        
 
         # calculate the weights for each offset relative to "top left" kernel
         # point (i.e., to account for in-plane acceleration)
