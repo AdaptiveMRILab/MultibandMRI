@@ -32,8 +32,7 @@ class grappa:
         # get the source data
         A = get_kernel_patches(calib_data, kernel_size=self.kernel_size, accel=self.accel)
         self.kernel_shifts, self.start_inds, self.eff_kernel_size = get_kernel_shifts(self.kernel_size, self.accel) 
-        print(self.kernel_shifts)
-        
+
         # l2 regularization 
         AH = A.conj().transpose(2,3)
         _,S,_ = torch.linalg.svd(A, full_matrices=False)
@@ -73,6 +72,8 @@ class grappa:
         if self.final_matrix_size is not None:
             out = interp_to_matrix_size(out, self.final_matrix_size)
 
+        out = torch.roll(out, shifts=tmp_shifts, dims=(2,3))
+        out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
         # data_tmp = data.clone()
         # data_tmp[:,:,:,0] = 0.0
         # data_tmp = torch.roll(data, shifts=tmp_shifts, dims=(2,3))
