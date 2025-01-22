@@ -75,7 +75,7 @@ class sense_grappa:
 
         # interpolate the missing points
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
-        Y = [(A@w).view(self.sms, self.coils, nr, -1) for w in self.weights]
+        Y = [(A@w).view(1, self.coils, nr, nc) for w in self.weights]
         out = torch.zeros_like(Y[0])
         for rfe, rpe in self.start_inds:
             print(Y[rfe*self.accel[1]+rpe].shape)
