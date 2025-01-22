@@ -72,11 +72,11 @@ class grappa:
         if self.final_matrix_size is not None:
             out = interp_to_matrix_size(out, self.final_matrix_size)
 
-        data_tmp = data.clone()
-        data_tmp[:,:,:,0] = 0.0
-        data_tmp = torch.roll(data, shifts=tmp_shifts, dims=(2,3))
+        # data_tmp = data.clone()
+        # data_tmp[:,:,:,0] = 0.0
+        # data_tmp = torch.roll(data, shifts=tmp_shifts, dims=(2,3))
 
-        out[torch.abs(data)]
+        # out[torch.abs(data)]
 
         return out
 
