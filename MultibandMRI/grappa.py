@@ -46,7 +46,6 @@ class grappa:
         self.weights = []
         for shifts in self.kernel_shifts:
             b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
-            print(b.shape)
             self.weights.append(AHA_inv @ (AH @ b))
 
     def apply(self, data):
@@ -64,6 +63,9 @@ class grappa:
         # final interpolation 
         if self.final_matrix_size is not None:
             out = interp_to_matrix_size(out, self.final_matrix_size)
+
+        # data consistency 
+        out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
 
         return out
 
