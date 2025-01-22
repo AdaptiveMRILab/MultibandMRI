@@ -33,7 +33,6 @@ class split_slice_grappa:
         #source = torch.sum(calib_data, dim=0, keepdim=True)
         A = get_kernel_patches(calib_data, kernel_size=self.kernel_size, accel=self.accel)
         A = torch.cat([A[None,s,:,:,:] for s in range(self.sms)], dim=2)
-        print(A.shape)
         
         # l2 regularization 
         AH = A.conj().transpose(2,3)
@@ -52,6 +51,7 @@ class split_slice_grappa:
             for rpe in range(self.accel[1]):
                 shifts = (base_read_shift+rfe, base_phase_shift+rpe)
                 b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
+                print(b.shape)
                 self.weights.append(AHA_inv @ (AH @ b))
 
     def apply(self, data):
