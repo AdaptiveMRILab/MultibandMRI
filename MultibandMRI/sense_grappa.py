@@ -70,6 +70,7 @@ class sense_grappa:
         Y = [(A@w).view(self.sms, self.coils, nr, -1) for w in self.weights]
         out = torch.zeros_like(Y[0])
         for rfe, rpe in self.start_inds:
+            print(Y[rfe*self.accel[1]+rpe].shape)
             out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
 
         # final interpolation 
