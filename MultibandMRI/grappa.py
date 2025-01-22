@@ -41,11 +41,14 @@ class grappa:
         I = torch.eye(AH.shape[0], dtype=A.dtype, device=A.device)[None,None,:,:]
         AHA_inv = torch.linalg.inv(AH@A + lamda*I)
 
+        print(A.shape)
+
         # calculate the weights for each offset relative to "top left" kernel
         # point (i.e., to account for in-plane acceleration)
         self.weights = []
         for shifts in self.kernel_shifts:
             b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
+            print(b.shape)
             self.weights.append(AHA_inv @ (AH @ b))
 
     def apply(self, data):
