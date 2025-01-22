@@ -76,10 +76,11 @@ class sense_grappa:
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
         #Y = [(A@w).view(1, self.coils, -1, nc) for w in self.weights]
         Y = [(A@w).view(1, self.coils, nr, -1) for w in self.weights]
-        out = torch.zeros_like(Y[0])
+        #out = torch.zeros_like(Y[0])
+        out = torch.zeros((1, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=inp_data.dtype, device=inp_data.device)
         for rfe, rpe in self.start_inds:
-            print(Y[rfe*self.accel[1]+rpe].shape)
-            out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
+            #out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
+            out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y
 
         # # final interpolation 
         # if self.final_matrix_size is not None:
