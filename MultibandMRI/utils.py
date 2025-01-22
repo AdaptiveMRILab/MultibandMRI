@@ -57,6 +57,7 @@ def get_kernel_shifts(kernel_size: Tuple,
 ):
     eff_row_kernel_size = (kernel_size[0] - 1) * accel[0] + 1
     eff_col_kernel_size = (kernel_size[1] - 1) * accel[1] + 1
+    eff_kernel_size = (eff_row_kernel_size, eff_col_kernel_size)
     base_read_shift = eff_row_kernel_size // 2 
     base_phase_shift = eff_col_kernel_size // 2
     shifts = []
@@ -65,7 +66,7 @@ def get_kernel_shifts(kernel_size: Tuple,
         for rpe in range(accel[1]):
             shifts.append((base_read_shift + rfe, base_phase_shift + rpe))
             start_inds.append((rfe, rpe))
-    return shifts, start_inds
+    return shifts, start_inds, eff_kernel_size
 
 def interp_to_matrix_size(inp: Tensor,
                           matrix_size:Tuple

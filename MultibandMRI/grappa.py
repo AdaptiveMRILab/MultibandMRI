@@ -31,7 +31,7 @@ class grappa:
 
         # get the source data
         A = get_kernel_patches(calib_data, kernel_size=self.kernel_size, accel=self.accel)
-        self.kernel_shifts, self.start_inds = get_kernel_shifts(self.kernel_size, self.accel) 
+        self.kernel_shifts, self.start_inds, self.eff_kernel_size = get_kernel_shifts(self.kernel_size, self.accel) 
 
         # l2 regularization 
         AH = A.conj().transpose(2,3)
@@ -60,12 +60,13 @@ class grappa:
         for rfe, rpe in self.start_inds:
             out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
         
+        # data consistency 
+        data_valid = data[:,:,self.eff_kernel_size[0]:(self.eff_kernel_size[0]+nr), self.eff_kernel_size[1]:(self.eff_kernel_size[1]+nc)]
+        out[torch.abs(data_valid) > 0.0] = data_valid[torch.abs(data_valid) > 0.0]
+        
         # final interpolation 
         if self.final_matrix_size is not None:
             out = interp_to_matrix_size(out, self.final_matrix_size)
-
-        # data consistency 
-        out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
 
         return out
 
