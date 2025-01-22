@@ -30,7 +30,7 @@ def get_kernel_patches(
         inp = torch.nn.functional.pad(inp, (col_padding, col_padding, row_padding, row_padding), mode='constant', value=0)
 
     stride = stride if stride is not None else (1,1)
-    patches = torch.nn.functional.unfold(inp, kernel_size=kernel_size, dilation=accel)
+    patches = torch.nn.functional.unfold(inp, kernel_size=kernel_size, dilation=accel, stride=stride)
     patches = patches.transpose(1,2)
     patches = patches[:,None,:,:]
     return patches 
