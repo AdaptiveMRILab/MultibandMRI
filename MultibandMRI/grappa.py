@@ -61,7 +61,7 @@ class grappa:
             out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
         
         # data consistency 
-        data_valid = data[:,:,self.eff_kernel_size[0]:(self.eff_kernel_size[0]+nr), self.eff_kernel_size[1]:(self.eff_kernel_size[1]+nc)]
+        data_valid = data[:,:,self.eff_kernel_size[0]:-self.eff_kernel_size[0]), self.eff_kernel_size[1]:-self.eff_kernel_size[1]]
         print(out.shape)
         print(data_valid.shape)
         print(nr)
