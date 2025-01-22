@@ -80,7 +80,7 @@ class sense_grappa:
         out = torch.zeros((1, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=inp_data.dtype, device=inp_data.device)
         for rfe, rpe in self.start_inds:
             #out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe][:,:,0::self.accel[0],0::self.accel[1]]
-            out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y
+            out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
 
         # # final interpolation 
         # if self.final_matrix_size is not None:
