@@ -32,9 +32,7 @@ class sense_grappa:
         # concatenate SMS data along readout dimension
         data = ifft1d(data, dim=2)
         data = torch.cat([data[None,s,...] for s in range(self.sms)], dim=2)
-
-        print('calibrate(): Data shape after concatenating')
-        print(data.shape)
+        data = fft1d(data, dim=2)
 
         # get the source data points 
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel)
