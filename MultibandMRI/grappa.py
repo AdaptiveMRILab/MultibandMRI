@@ -62,8 +62,10 @@ class grappa:
         
         # data consistency 
         data_valid = data[:,:,self.eff_kernel_size[0]:(self.eff_kernel_size[0]+nr), self.eff_kernel_size[1]:(self.eff_kernel_size[1]+nc)]
+        print(out.shape)
+        print(data_valid.shape)
         out[torch.abs(data_valid) > 0.0] = data_valid[torch.abs(data_valid) > 0.0]
-        
+
         # final interpolation 
         if self.final_matrix_size is not None:
             out = interp_to_matrix_size(out, self.final_matrix_size)
