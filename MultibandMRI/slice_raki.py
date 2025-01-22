@@ -28,6 +28,8 @@ class slice_raki:
         self.calibrate(calib_data)
 
     def calibrate(self, calib_data):
+
+        
         
         # "source" data for slice grappa calibration is the multiband k-space 
         source = torch.sum(calib_data, dim=0, keepdim=True)
@@ -50,7 +52,9 @@ class slice_raki:
             for rpe in range(self.accel[1]):
                 shifts = (base_read_shift+rfe, base_phase_shift+rpe)
                 b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
-                self.weights.append(AHA_inv @ (AH @ b))
+                # self.weights.append(AHA_inv @ (AH @ b))
+                model = MLP()
+                train_network(model, A, b, lr, num_epochs)
 
     def apply(self, data):
 
