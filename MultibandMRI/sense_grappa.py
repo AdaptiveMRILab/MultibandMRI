@@ -70,6 +70,8 @@ class sense_grappa:
         # figure out number of interpolated points along each dimension 
         nr, nc = get_num_interpolated_points(data.shape, self.kernel_size, self.accel)
 
+        print(nr, nc)
+
         # interpolate the missing points
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
         Y = [(A@w).view(1, self.coils, -1, nc) for w in self.weights]
