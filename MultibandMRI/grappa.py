@@ -64,6 +64,8 @@ class grappa:
         data_valid = data[:,:,self.eff_kernel_size[0]:(self.eff_kernel_size[0]+nr), self.eff_kernel_size[1]:(self.eff_kernel_size[1]+nc)]
         print(out.shape)
         print(data_valid.shape)
+        print(nr)
+        print(nc)
         out[torch.abs(data_valid) > 0.0] = data_valid[torch.abs(data_valid) > 0.0]
 
         # final interpolation 
