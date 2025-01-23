@@ -71,4 +71,4 @@ class split_slice_grappa:
         img = ifft2d(out, dims=(2,3))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
         
-        return out
+        return out, rss
