@@ -44,6 +44,7 @@ class sense_grappa:
         vals = torch.max(torch.abs(S), dim=-1).values
         lamda = self.tik * vals[:,:,None,None]
         I = torch.eye(AH.shape[2], dtype=A.dtype, device=A.device)[None,None,:,:]
+        print(I.shape)
         AHA_inv = torch.linalg.inv(AH@A + lamda*I)
 
         # calculate the weights for each offset relative to "top left" kernel
@@ -79,7 +80,7 @@ class sense_grappa:
             out = interp_to_matrix_size(out, adjusted_matrix_size)
 
         # data consistency
-        out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
+        # out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
 
         return out
 
