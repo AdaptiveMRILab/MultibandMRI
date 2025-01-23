@@ -84,9 +84,7 @@ class sense_grappa:
         # bring to the image domain and crop slices
         nread = inp_data.shape[2]
         img = ifft2d(out, dims=(2,3))
-        print(nread)
-        print(img.shape)
-        img = torch.stack([img[0,:,n*nread:(n+1*nread),:] for n in range(self.sms)], axis=0)
+        img = torch.stack([img[0,:,n*nread:(n+1)*nread,:] for n in range(self.sms)], axis=0)
         slc_ksp = fft2d(img, dims=(2,3))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
