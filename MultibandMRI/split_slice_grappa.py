@@ -1,7 +1,7 @@
 import torch 
 from torch import Tensor
 from typing import Tuple 
-from MultibandMRI import get_kernel_patches, get_kernel_points, get_kernel_shifts, get_num_interpolated_points, interp_to_matrix_size
+from MultibandMRI import get_kernel_patches, get_kernel_points, get_kernel_shifts, get_num_interpolated_points, interp_to_matrix_size, ifft2d
 
 class split_slice_grappa:
 
@@ -66,5 +66,9 @@ class split_slice_grappa:
         # zero-fill to final matrix size 
         if self.final_matrix_size is not None:
             out = interp_to_matrix_size(out, self.final_matrix_size)
+
+        # get coil-combined image 
+        img = ifft2d(out, dims=(2,3))
+        rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
         
         return out

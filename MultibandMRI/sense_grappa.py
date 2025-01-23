@@ -1,7 +1,7 @@
 import torch 
 from torch import Tensor
 from typing import Tuple 
-from MultibandMRI import get_kernel_patches, get_kernel_points, get_num_interpolated_points, get_kernel_shifts, interp_to_matrix_size, ifft1d, fft1d
+from MultibandMRI import get_kernel_patches, get_kernel_points, get_num_interpolated_points, get_kernel_shifts, interp_to_matrix_size, ifft1d, fft1d, fft2d, ifft2d
 
 class sense_grappa:
 
@@ -81,6 +81,11 @@ class sense_grappa:
         # data consistency
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
 
-        return out
+        # bring to the image domain and crop slices
+        nread = inp_data.shape[2]
+        img = ifft2d(out, dims=(2,3))
+        img = torch.stack([img[0,:,n*nread:(n+1*nread),:] for n in range(self.sms)], axis=0)
+        slc_ksp = fft2d(img, dims=(2,3))
+        rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
-
+        return slc_ksp, rss
