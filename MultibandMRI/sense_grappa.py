@@ -1,6 +1,7 @@
 import torch 
 from torch import Tensor
 from typing import Tuple 
+import numpy as np 
 from MultibandMRI import get_kernel_patches, get_kernel_points, get_num_interpolated_points, get_kernel_shifts, interp_to_matrix_size, ifft1d, fft1d, fft2d, ifft2d
 
 class sense_grappa:
@@ -57,9 +58,7 @@ class sense_grappa:
     def apply(self, inp_data):
 
         # readout FOV of extended-FOV images is no longer centered for an even number of simultaneously excited slices. add FOV/2 shift here
-        if self.sms % 2 == 0: 
-            print('adding fov shifting phase')
-            inp_data[:,:,1::2,:] = inp_data[:,:,1::2,:] * torch.exp(torch.tensor([1j], dtype=torch.complex64, device=inp_data.device))
+        if self.sms % 2 == 0: inp_data[:,:,1::2,:] = inp_data[:,:,1::2,:] * np.exp(1j*np.pi)
 
         # zero-fill data 
         data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms*inp_data.shape[2], inp_data.shape[3]), dtype=inp_data.dtype, device=inp_data.device)
@@ -81,7 +80,7 @@ class sense_grappa:
             out = interp_to_matrix_size(out, adjusted_matrix_size)
 
         # data consistency
-        # out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
+        out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
 
         # bring to the image domain and crop slices
         nread = inp_data.shape[2]
