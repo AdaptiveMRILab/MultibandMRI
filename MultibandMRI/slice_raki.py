@@ -77,8 +77,6 @@ class slice_raki:
             slice_model_paths = []
             for s in range(self.sms):
                 model_path = os.path.join(self.recon_folder, 'model_shift%i_slice%i.pt'%(self.kernel_shifts.index(shifts), s))
-                #print(A.shape)
-                #X = torch.cat([A[0,n,:,:] for n in range(self.coils)], dim=1)   # [observations, prod(kernel_size)*coils*coils]
                 X = A[0,0,:,:]
                 Y = rhs[s,:,:,0].permute(1,0)                                   # [observations, coils]
                 _, train_loss, val_loss  = train_complex_mlp(X, Y, model_path, self.train_split, 
@@ -107,7 +105,6 @@ class slice_raki:
         for k in range(len(self.start_inds)):
             rfe, rpe = self.start_inds[k]
             for s in range(self.sms):
-                #X = torch.cat([A[0,n,:,:] for n in range(self.coils)], dim=1)
                 X = A[0,0,:,:]
                 model = load_complex_mlp(self.model_paths[k][s], X.shape[1], self.coils, num_layers=self.num_layers, hidden_size=self.hidden_size).to(X.device)
                 pred = model(X).permute(1,0).view(self.coils, nr, -1)
@@ -124,5 +121,5 @@ class slice_raki:
         img = ifft2d(out, dims=(2,3))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
-        return out, rss
+        return out.detach(), rss.detach()
     
