@@ -77,6 +77,7 @@ class slice_raki:
             slice_model_paths = []
             for s in range(self.sms):
                 model_path = os.path.join(self.recon_folder, 'model_shift%i_slice%i.pt'%(self.kernel_shifts.index(shifts), s))
+                print(A.shape)
                 X = torch.cat([A[0,n,:,:] for n in range(self.coils)], dim=1)   # [observations, prod(kernel_size)*coils*coils]
                 Y = rhs[s,:,:,0].permute(1,0)                                   # [observations, coils]
                 _, train_loss, val_loss  = train_complex_mlp(X, Y, model_path, self.train_split, 
