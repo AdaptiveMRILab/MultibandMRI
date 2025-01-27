@@ -122,8 +122,8 @@ class complex_mlp(torch.nn.Module):
 
     def forward(self, x):
         for n in range(self.num_layers):
-            xr = self.layers_real(x.real) - self.layers_imag(x.imag)
-            xi = self.layers_real(x.imag) + self.layers_imag(x.real)
+            xr = self.layers_real[n](x.real) - self.layers_imag[n](x.imag)
+            xi = self.layers_real[n](x.imag) + self.layers_imag[n](x.real)
             x = torch.complex(xr, xi) 
             if n < self.num_layers - 1:
                 x = self.crelu(x)
