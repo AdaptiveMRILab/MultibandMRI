@@ -47,7 +47,6 @@ class slice_grappa:
         self.weights = []
         for shifts in self.kernel_shifts:
             b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
-            print(b.shape)
             self.weights.append(AHA_inv @ (AH @ b))
 
     def apply(self, data):

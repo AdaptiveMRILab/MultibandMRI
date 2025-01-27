@@ -95,3 +95,95 @@ def get_num_interpolated_points(shp: Tuple,
     nr = torch.numel(rv)
     nc = torch.numel(cv)
     return nr, nc 
+
+class complex_relu(torch.nn.Module):
+    def __init__(self, eps=1e-6):
+        super(complex_relu, self).__init__()
+        self.eps = eps
+    def forward(self, x):
+        mag = torch.abs(x)
+        return torch.nn.functional.relu(mag).to(torch.complex64)/(mag+self.eps)*x
+
+class complex_mlp(torch.nn.Module):
+    '''
+    A complex-valued multi-layer perceptron
+    '''
+    def __init__(self, in_size, out_size, num_layers=4, hidden_size=64, bias=False):
+        super(complex_mlp, self).__init__()
+        self.num_layers = num_layers
+        self.layers_real = torch.nn.ModuleList()
+        self.layers_imag = torch.nn.ModuleList()
+        for n in range(num_layers):
+            ninp = in_size if n == 0 else hidden_size
+            nout = out_size if n == num_layers - 1 else hidden_size 
+            self.layers_real.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
+            self.layers_imag.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
+        self.crelu = complex_relu()
+
+    def forward(self, x):
+        for n in range(self.num_layers):
+            xr = self.layers_real(x.real) - self.layers_imag(x.imag)
+            xi = self.layers_real(x.imag) + self.layers_imag(x.real)
+            x = torch.complex(xr, xi) 
+            if n < self.num_layers - 1:
+                x = self.crelu(x)
+        return x 
+    
+def train_complex_mlp(X, Y, model_path, train_split=0.75, num_layers=4, hidden_size=128, bias=False, num_epochs=100, learn_rate=1e-4, scale_data=True, random_seed=42):
+
+    torch.manual_seed(random_seed) 
+
+    # get the training and validation indices
+    nsamples = X.shape[0]
+    shuffled_inds = torch.randperm(nsamples)
+    ntrain = int(nsamples * train_split)
+    train_inds = shuffled_inds[:ntrain]
+    val_inds = shuffled_inds[ntrain:]
+
+    # make the model 
+    in_size = X.shape[1]
+    out_size = Y.shape[1]
+    model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
+
+    # set up the optimizer and loss functions 
+    optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
+    loss_fn = torch.nn.MSELoss()
+
+    train_loss = torch.zeros((num_epochs,), dtype=torch.float32, device=X.device)
+    val_loss = torch.zeros((num_epochs,), dtype=torch.float32, device=X.device)
+    best_val_loss = 1e9 
+    
+    for epoch in range(num_epochs):
+        
+        # training step
+        model.train()
+        optimizer.zero_grad()
+        pred_train = model(X[train_inds,:])
+        loss = loss_fn(pred_train.real, Y[train_inds,:].real) + \
+               loss_fn(pred_train.imag, Y[train_inds,:].imag)
+        train_loss[epoch] = loss.item()
+        loss.backward()
+        optimizer.step()
+
+        # validation 
+        model.eval()
+        pred_val = model(X[val_inds,:])
+        loss = loss_fn(pred_val.real, Y[val_inds,:].real) + \
+               loss_fn(pred_val.imag, Y[val_inds,:].imag)
+        val_loss[epoch] = loss.item()
+
+        # save the current model if it improves validation performance 
+        if val_loss[epoch] < best_val_loss:
+            best_val_loss = val_loss[epoch]
+            torch.save(model.state_dict(), model_path)
+    
+    # load the final model
+    model.load_state_dict(torch.load(model_path, weights_only=True))
+    model.eval()
+
+    return model, train_loss, val_loss
+
+def load_complex_mlp(model_path, in_size, out_size, num_layers, hidden_size):
+    model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size)
+    model.load_state_dict(torch.load(model_path, weights_only=True))
+    return model 
