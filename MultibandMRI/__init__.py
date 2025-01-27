@@ -3,3 +3,4 @@ from .grappa import grappa
 from .slice_grappa import slice_grappa
 from .split_slice_grappa import split_slice_grappa
 from .sense_grappa import sense_grappa
+from .nets import complex_mlp

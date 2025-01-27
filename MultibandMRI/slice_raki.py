@@ -3,14 +3,15 @@ from torch import Tensor
 from typing import Tuple 
 from MultibandMRI import get_kernel_patches, get_kernel_points, get_kernel_shifts, get_num_interpolated_points, interp_to_matrix_size, ifft2d
 
-class slice_grappa:
+class slice_raki:
 
     def __init__(self,
                  calib_data: Tensor,
                  accel: Tuple=(1,1),
                  kernel_size: Tuple=(3,3),
                  tik: float=0.0,
-                 final_matrix_size: Tuple=None):
+                 final_matrix_size: Tuple=None,
+                 learn_residual: bool=True):
         '''
         Input:
             calib_data: (sms, coils, readout, phase) complex64 tensor
@@ -25,6 +26,7 @@ class slice_grappa:
         self.kernel_size = kernel_size 
         self.tik = tik 
         self.final_matrix_size = final_matrix_size
+        self.learn_residual = learn_residual
         self.calibrate(calib_data)
 
     def calibrate(self, calib_data):
@@ -44,11 +46,23 @@ class slice_grappa:
 
         # calculate the weights for each offset relative to "top left" kernel
         # point (i.e., to account for in-plane acceleration)
-        self.weights = []
+        self.weights = [] # this will hold linear GRAPPA reconstruction weights 
+        self.models = []  # this will hold the trained RAKI model weights 
         for shifts in self.kernel_shifts:
+
             b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
-            print(b.shape)
-            self.weights.append(AHA_inv @ (AH @ b))
+            w = AHA_inv @ (AH @ b)
+            self.weights.append(w)
+
+            # get the target data: it will either be the residual error after GRAPPA 
+            # or simply the target k-space points 
+            target = b - A@w if self.learn_residual else b 
+
+            # we will need to train a model for each slice 
+            slice_models = []
+            for s in range(self.sms):
+                source = torch.cat([A[s,n,:,:] for n in range(self.coils)], dim=-1)
+                
 
     def apply(self, data):
 
