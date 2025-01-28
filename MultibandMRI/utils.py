@@ -152,6 +152,12 @@ def train_complex_mlp(X, Y, model_path, train_split=0.75, num_layers=4, hidden_s
     train_loss = torch.zeros((num_epochs,), dtype=torch.float32, device=X.device)
     val_loss = torch.zeros((num_epochs,), dtype=torch.float32, device=X.device)
     best_val_loss = 1e9 
+
+    if scale_data:
+        xmean = torch.mean(X, dim=1, keepdim=True)
+        xstd = torch.std(X, dim=1, keepdim=True)
+        X = (X - xmean) / xstd
+        Y = (Y - xmean) / xstd  
     
     for epoch in range(num_epochs):
         
