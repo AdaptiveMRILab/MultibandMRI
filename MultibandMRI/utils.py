@@ -157,7 +157,7 @@ def train_complex_mlp(X, Y, model_path, train_split=0.75, num_layers=4, hidden_s
         xmean = torch.mean(X, dim=1, keepdim=True)
         xstd = torch.std(X, dim=1, keepdim=True)
         X = (X - xmean) / xstd
-        #Y = (Y - xmean) / xstd  
+        Y = (Y - xmean) / xstd  
     
     for epoch in range(num_epochs):
         

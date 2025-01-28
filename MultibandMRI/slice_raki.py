@@ -116,8 +116,8 @@ class slice_raki:
             for s in range(self.sms):
                 model = load_complex_mlp(self.model_paths[k][s], X.shape[1], self.coils, num_layers=self.num_layers, hidden_size=self.hidden_size).to(X.device)
                 pred = model(X)
-                #if self.scale_data:
-                #    pred = pred*xstd + xmean 
+                if self.scale_data:
+                   pred = pred*xstd + xmean 
                 pred = pred.permute(1,0).view(self.coils, nr, -1)
                 if self.learn_residual:
                     out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = out_linear[s,:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
