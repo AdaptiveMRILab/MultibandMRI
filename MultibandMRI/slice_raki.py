@@ -19,7 +19,7 @@ class slice_raki:
                  random_seed: int=42,
                  learn_rate: float=1e-4,
                  train_split: float=0.75,
-                 scale_data: bool=True,
+                 scale_data: bool=False,
                  learn_residual: bool=True):
         '''
         Input:
