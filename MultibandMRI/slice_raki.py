@@ -20,6 +20,7 @@ class slice_raki:
                  learn_rate: float=1e-4,
                  train_split: float=0.75,
                  scale_data: bool=False,
+                 loss_function: str='L2',
                  learn_residual: bool=True):
         '''
         Input:
@@ -44,6 +45,7 @@ class slice_raki:
         self.recon_folder = recon_folder
         self.train_split = train_split
         self.scale_data = scale_data
+        self.loss_function = loss_function
         self.calibrate(calib_data)
 
     def calibrate(self, calib_data):
@@ -84,7 +86,8 @@ class slice_raki:
                 _, train_loss, val_loss  = train_complex_mlp(X, Y, model_path, self.train_split, 
                                           num_layers=self.num_layers, hidden_size=self.hidden_size, 
                                           num_epochs=self.num_epochs, learn_rate=self.learn_rate, 
-                                          random_seed=self.random_seed, scale_data=self.scale_data)
+                                          random_seed=self.random_seed, scale_data=self.scale_data,
+                                          loss_function=self.loss_function)
                 slice_model_paths.append(model_path)
             self.model_paths.append(slice_model_paths)
 

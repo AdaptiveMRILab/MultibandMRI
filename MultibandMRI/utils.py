@@ -129,7 +129,7 @@ class complex_mlp(torch.nn.Module):
                 x = self.crelu(x)
         return x 
     
-def train_complex_mlp(X, Y, model_path, train_split=0.75, num_layers=4, hidden_size=128, bias=False, num_epochs=100, learn_rate=1e-4, scale_data=True, random_seed=42):
+def train_complex_mlp(X, Y, model_path, train_split=0.75, num_layers=4, hidden_size=128, bias=False, num_epochs=100, learn_rate=1e-4, scale_data=True, random_seed=42, loss_function='L2'):
 
     torch.manual_seed(random_seed) 
 
@@ -147,7 +147,10 @@ def train_complex_mlp(X, Y, model_path, train_split=0.75, num_layers=4, hidden_s
 
     # set up the optimizer and loss functions 
     optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
-    loss_fn = torch.nn.MSELoss()
+    if loss_function == 'L2':
+        loss_fn = torch.nn.MSELoss()
+    elif loss_function == 'L1':
+        loss_fn = torch.nn.L1Loss()
 
     train_loss = torch.zeros((num_epochs,), dtype=torch.float32, device=X.device)
     val_loss = torch.zeros((num_epochs,), dtype=torch.float32, device=X.device)
