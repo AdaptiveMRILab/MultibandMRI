@@ -96,21 +96,13 @@ def get_num_interpolated_points(shp: Tuple,
     nc = torch.numel(cv)
     return nr, nc 
 
-# class complex_relu(torch.nn.Module):
-#     def __init__(self, eps=1e-6):
-#         super(complex_relu, self).__init__()
-#         self.eps = eps
-#     def forward(self, x):
-#         mag = torch.abs(x)
-#         return torch.nn.functional.relu(mag).to(torch.complex64)/(mag+self.eps)*x
-
 class complex_relu(torch.nn.Module):
     def __init__(self, eps=1e-6):
         super(complex_relu, self).__init__()
+        self.eps = eps
     def forward(self, x):
-        xr = torch.nn.functional.relu(x.real)
-        xi = torch.nn.functional.relu(x.imag)
-        return torch.complex(xr, xi)
+        mag = torch.abs(x)
+        return torch.nn.functional.relu(mag).to(torch.complex64)/(mag+self.eps)*x
     
 class complex_mlp(torch.nn.Module):
     '''
