@@ -2,7 +2,7 @@ import torch
 from torch import Tensor
 from typing import Tuple 
 import os 
-from MultibandMRI import get_kernel_patches, get_kernel_points, get_kernel_shifts, get_num_interpolated_points, interp_to_matrix_size, ifft2d, train_complex_mlp, load_complex_mlp
+from MultibandMRI import get_kernel_patches, get_kernel_points, get_kernel_shifts, get_num_interpolated_points, interp_to_matrix_size, ifft2d, train_complex_net, load_complex_net
 
 class slice_raki:
 
@@ -21,6 +21,7 @@ class slice_raki:
                  train_split: float=0.75,
                  scale_data: bool=False,
                  loss_function: str='L2',
+                 net_type: str='MLP',
                  learn_residual: bool=True):
         '''
         Input:
@@ -46,6 +47,7 @@ class slice_raki:
         self.train_split = train_split
         self.scale_data = scale_data
         self.loss_function = loss_function
+        self.net_type = net_type
         self.calibrate(calib_data)
 
     def calibrate(self, calib_data):
@@ -83,7 +85,7 @@ class slice_raki:
                 model_path = os.path.join(self.recon_folder, 'model_shift%i_slice%i.pt'%(self.kernel_shifts.index(shifts), s))
                 X = A[0,0,:,:]
                 Y = rhs[s,:,:,0].permute(1,0)
-                _, train_loss, val_loss  = train_complex_mlp(X, Y, model_path, self.train_split, 
+                _, train_loss, val_loss  = train_complex_net(X, Y, model_path, self.net_type, self.train_split, 
                                           num_layers=self.num_layers, hidden_size=self.hidden_size, 
                                           num_epochs=self.num_epochs, learn_rate=self.learn_rate, 
                                           random_seed=self.random_seed, scale_data=self.scale_data,
@@ -117,7 +119,7 @@ class slice_raki:
         for k in range(len(self.start_inds)):
             rfe, rpe = self.start_inds[k]
             for s in range(self.sms):
-                model = load_complex_mlp(self.model_paths[k][s], X.shape[1], self.coils, num_layers=self.num_layers, hidden_size=self.hidden_size).to(X.device)
+                model = load_complex_net(self.model_paths[k][s], self.net_type, X.shape[1], self.coils, num_layers=self.num_layers, hidden_size=self.hidden_size).to(X.device)
                 pred = model(X)
                 if self.scale_data:
                    pred = pred*xstd + xmean 

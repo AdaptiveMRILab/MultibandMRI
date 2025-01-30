@@ -129,7 +129,77 @@ class complex_mlp(torch.nn.Module):
                 x = self.crelu(x)
         return x 
     
-def train_complex_mlp(X, Y, model_path, train_split=0.75, num_layers=4, hidden_size=128, bias=False, num_epochs=100, learn_rate=1e-4, scale_data=True, random_seed=42, loss_function='L2'):
+class complex_resnet_block(torch.nn.Module):
+    def __init__(self, in_size, out_size, bias=False):
+        super(complex_resnet_block, self).__init__()
+
+        self.layer1_real = torch.nn.Linear(in_features=in_size, out_features=out_size, bias=bias)
+        self.layer1_imag = torch.nn.Linear(in_features=in_size, out_features=out_size, bias=bias)
+
+        self.layer2_real = torch.nn.Linear(in_features=out_size, out_features=out_size, bias=bias)
+        self.layer2_imag = torch.nn.Linear(in_features=out_size, out_features=out_size, bias=bias)
+
+        self.layer3_real = torch.nn.Linear(in_features=out_size, out_features=out_size, bias=bias)
+        self.layer3_imag = torch.nn.Linear(in_features=out_size, out_features=out_size, bias=bias)
+
+        self.crelu = complex_relu()
+
+    def forward(self, x):
+
+        x0 = x.clone()
+        
+        xr = self.layer1_real(x.real) - self.layer1_imag(x.imag)
+        xi = self.layer1_real(x.imag) + self.layer1_imag(x.real)
+        x = torch.complex(xr, xi) 
+        x = self.crelu(x)
+
+        xr = self.layer2_real(x.real) - self.layer2_imag(x.imag)
+        xi = self.layer2_real(x.imag) + self.layer2_imag(x.real)
+        x = torch.complex(xr, xi) 
+        x = self.crelu(x)
+
+        xr = self.layer3_real(x.real) - self.layer3_imag(x.imag)
+        xi = self.layer3_real(x.imag) + self.layer3_imag(x.real)
+        x = torch.complex(xr, xi) 
+
+        x = self.crelu(x + x0)
+
+        return x 
+    
+class complex_resnet(torch.nn.Module):
+    def __init__(self, in_size, out_size, num_blocks=3, hidden_size=64, bias=False):
+        super(complex_resnet, self).__init__()
+        self.num_blocks = num_blocks
+        
+        self.linear1_real = torch.nn.Linear(in_features=in_size, out_features=hidden_size, bias=bias)
+        self.linear1_imag = torch.nn.Linear(in_features=in_size, out_features=hidden_size, bias=bias)
+
+        self.blocks = torch.nn.ModuleList()
+        for n in range(self.num_blocks):
+            self.blocks.append(complex_resnet_block(hidden_size, hidden_size, bias=bias))
+
+        self.linear2_real = torch.nn.Linear(in_features=hidden_size, out_features=out_size, bias=bias)
+        self.linear2_imag = torch.nn.Linear(in_features=hidden_size, out_features=out_size, bias=bias)
+
+
+    def forward(self, x):
+
+        xr = self.linear1_real(x.real) - self.linear1_imag(x.imag)
+        xi = self.linear1_real(x.imag) + self.linear1_imag(x.real)
+        x = torch.complex(xr, xi) 
+        x = self.crelu(x)
+
+        for n in range(self.num_blocks):
+            x = self.blocks[n](x)
+
+        xr = self.linear2_real(x.real) - self.linear2_imag(x.imag)
+        xi = self.linear2_real(x.imag) + self.linear2_imag(x.real)
+        x = torch.complex(xr, xi) 
+        
+        return x
+
+
+def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4, hidden_size=128, bias=False, num_epochs=100, learn_rate=1e-4, scale_data=True, random_seed=42, loss_function='L2'):
 
     torch.manual_seed(random_seed) 
 
@@ -143,7 +213,10 @@ def train_complex_mlp(X, Y, model_path, train_split=0.75, num_layers=4, hidden_s
     # make the model 
     in_size = X.shape[1]
     out_size = Y.shape[1]
-    model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
+    if net_type == 'MLP':
+        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
+    elif net_type == 'RES':
+        model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
 
     # set up the optimizer and loss functions 
     optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
@@ -192,7 +265,11 @@ def train_complex_mlp(X, Y, model_path, train_split=0.75, num_layers=4, hidden_s
 
     return model, train_loss, val_loss
 
-def load_complex_mlp(model_path, in_size, out_size, num_layers, hidden_size):
-    model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size)
+def load_complex_net(model_path, net_type, in_size, out_size, num_layers, hidden_size):
+    # model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size)
+    if net_type == 'MLP':
+        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size)
+    elif net_type == 'RES':
+        model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size)
     model.load_state_dict(torch.load(model_path, weights_only=True))
     return model 
