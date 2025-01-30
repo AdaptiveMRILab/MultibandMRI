@@ -199,9 +199,24 @@ class complex_resnet(torch.nn.Module):
         x = torch.complex(xr, xi) 
         
         return x
+    
+class l1_l2_loss(torch.nn.Module):
+    def __init__(self, l2_frac=0.5):
+        self.l2_frac = l2_frac
+        self.l1 = torch.nn.L1Loss()
+        self.l2 = torch.nn.MSELoss()
+    def forward(self, input, target):
+        if self.l2_frac == 0.0:
+            return self.l1(input, target)
+        elif self.l2_frac == 1.0:
+            return self.l2(input, target)
+        else:
+            return (1.0 - self.l2_frac) * self.l1(input, target) + self.l2_frac * self.l2(input, target)
 
 
-def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4, hidden_size=128, bias=False, num_epochs=100, learn_rate=1e-4, scale_data=True, random_seed=42, loss_function='L2'):
+
+
+def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4, hidden_size=128, bias=False, num_epochs=100, learn_rate=1e-4, scale_data=True, random_seed=42, loss_function='L1', l2_frac=0.5):
 
     torch.manual_seed(random_seed) 
 
@@ -220,12 +235,16 @@ def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4
     elif net_type == 'RES':
         model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
 
-    # set up the optimizer and loss functions 
+    # set up the optimizer 
     optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
+
+    # set up the loss function 
     if loss_function == 'L2':
         loss_fn = torch.nn.MSELoss()
     elif loss_function == 'L1':
         loss_fn = torch.nn.L1Loss()
+    elif loss_function == 'L1_L2':
+        loss_fn = l1_l2_loss(l2_frac)
 
     train_loss = torch.zeros((num_epochs,), dtype=torch.float32, device=X.device)
     val_loss = torch.zeros((num_epochs,), dtype=torch.float32, device=X.device)
