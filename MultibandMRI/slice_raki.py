@@ -23,7 +23,7 @@ class slice_raki:
                  loss_function: str='L1_L2',
                  l2_frac: float=0.5,
                  net_type: str='MLP',
-                 learn_residual: bool=True):
+                 linear_weight: float=1.0):
         '''
         Input:
             calib_data: (sms, coils, readout, phase) complex64 tensor
@@ -38,7 +38,8 @@ class slice_raki:
         self.kernel_size = kernel_size 
         self.tik = tik 
         self.final_matrix_size = final_matrix_size
-        self.learn_residual = learn_residual
+        #self.learn_residual = learn_residual
+        self.linear_weight = linear_weight
         self.num_layers = num_layers 
         self.hidden_size = hidden_size
         self.num_epochs = num_epochs
@@ -79,7 +80,8 @@ class slice_raki:
 
             # get the target data: it will either be the residual error after GRAPPA 
             # or simply the target k-space points 
-            rhs = b - A@w if self.learn_residual else b 
+            #rhs = b - A@w if self.learn_residual else b 
+            rhs = b - self.linear_weight*A@w
 
             # train a model for each slice
             slice_model_paths = []
@@ -126,10 +128,11 @@ class slice_raki:
                 if self.scale_data:
                    pred = pred*xstd + xmean 
                 pred = pred.permute(1,0).view(self.coils, nr, -1)
-                if self.learn_residual:
-                    out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = out_linear[s,:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
-                else:
-                    out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = pred
+                out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = self.linear_weight * out_linear[s,:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
+                # if self.learn_residual:
+                #     out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = out_linear[s,:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
+                # else:
+                #     out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = pred
                     
         # zero-fill to final matrix size 
         if self.final_matrix_size is not None:
