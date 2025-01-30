@@ -38,7 +38,6 @@ class slice_raki:
         self.kernel_size = kernel_size 
         self.tik = tik 
         self.final_matrix_size = final_matrix_size
-        #self.learn_residual = learn_residual
         self.linear_weight = linear_weight
         self.num_layers = num_layers 
         self.hidden_size = hidden_size
@@ -78,9 +77,7 @@ class slice_raki:
             w = AHA_inv @ (AH @ b)
             self.weights.append(w)
 
-            # get the target data: it will either be the residual error after GRAPPA 
-            # or simply the target k-space points 
-            #rhs = b - A@w if self.learn_residual else b 
+            # get the target data (difference between acquired data and weighted GRAPPA-reconstructed data)
             rhs = b - self.linear_weight*A@w
 
             # train a model for each slice
@@ -129,10 +126,6 @@ class slice_raki:
                    pred = pred*xstd + xmean 
                 pred = pred.permute(1,0).view(self.coils, nr, -1)
                 out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = self.linear_weight * out_linear[s,:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
-                # if self.learn_residual:
-                #     out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = out_linear[s,:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
-                # else:
-                #     out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = pred
                     
         # zero-fill to final matrix size 
         if self.final_matrix_size is not None:
