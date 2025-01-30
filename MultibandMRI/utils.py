@@ -170,6 +170,8 @@ class complex_resnet(torch.nn.Module):
     def __init__(self, in_size, out_size, num_blocks=3, hidden_size=64, bias=False):
         super(complex_resnet, self).__init__()
         self.num_blocks = num_blocks
+
+        self.crelu = complex_relu()
         
         self.linear1_real = torch.nn.Linear(in_features=in_size, out_features=hidden_size, bias=bias)
         self.linear1_imag = torch.nn.Linear(in_features=in_size, out_features=hidden_size, bias=bias)
