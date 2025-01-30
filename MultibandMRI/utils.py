@@ -202,6 +202,7 @@ class complex_resnet(torch.nn.Module):
     
 class l1_l2_loss(torch.nn.Module):
     def __init__(self, l2_frac=0.5):
+        super(l1_l2_loss, self).__init__()
         self.l2_frac = l2_frac
         self.l1 = torch.nn.L1Loss()
         self.l2 = torch.nn.MSELoss()
