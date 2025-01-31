@@ -56,9 +56,10 @@ class split_slice_raki:
     def calibrate(self, calib_data):
     
         # "source" data for slice grappa calibration is the multiband k-space 
-        source = torch.sum(calib_data, dim=0, keepdim=True)
-        A = get_kernel_patches(source, kernel_size=self.kernel_size, accel=self.accel)
+        A = get_kernel_patches(calib_data, kernel_size=self.kernel_size, accel=self.accel)
+        print(A.shape)
         self.kernel_shifts, self.start_inds, self.eff_kernel_size = get_kernel_shifts(self.kernel_size, self.accel) 
+        print(f"Kernel shifts: {self.kernel_shifts}; Start inds: {self.start_inds}; Effective kernel size: {self.eff_kernel_size}")
 
         # l2 regularization 
         AH = A.conj().transpose(2,3)
