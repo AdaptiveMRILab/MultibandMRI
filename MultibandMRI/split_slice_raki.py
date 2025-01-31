@@ -55,10 +55,13 @@ class split_slice_raki:
 
     def calibrate(self, calib_data):
     
-        # "source" data for slice grappa calibration is the multiband k-space 
+        # split slice grappa does not require explicit sum of calibration data over slices
         A = get_kernel_patches(calib_data, kernel_size=self.kernel_size, accel=self.accel)
-        print(A.shape)
+        A = torch.cat([A[None,s,:,:,:] for s in range(self.sms)], dim=2)
         self.kernel_shifts, self.start_inds, self.eff_kernel_size = get_kernel_shifts(self.kernel_size, self.accel) 
+        
+        # some print statements to help me
+        print(A.shape)
         print(f"Kernel shifts: {self.kernel_shifts}; Start inds: {self.start_inds}; Effective kernel size: {self.eff_kernel_size}")
 
         # l2 regularization 
@@ -96,45 +99,45 @@ class split_slice_raki:
                 slice_model_paths.append(model_path)
             self.model_paths.append(slice_model_paths)
 
-        def apply(self, data):
+    def apply(self, data):
 
-            # figure out number of interpolated points along each dimension 
-            nr, nc = get_num_interpolated_points(data.shape, self.kernel_size, self.accel)
+        # figure out number of interpolated points along each dimension 
+        nr, nc = get_num_interpolated_points(data.shape, self.kernel_size, self.accel)
 
-            # get the source data kernel patches 
-            A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
+        # get the source data kernel patches 
+        A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
 
-            # input to neural network 
-            X = A[0,0,:,:]
-            if self.scale_data:
-                xmean = torch.mean(X, dim=1, keepdim=True)
-                xstd = torch.std(X, dim=1, keepdim=True)
-                X = (X - xmean) / xstd
+        # input to neural network 
+        X = A[0,0,:,:]
+        if self.scale_data:
+            xmean = torch.mean(X, dim=1, keepdim=True)
+            xstd = torch.std(X, dim=1, keepdim=True)
+            X = (X - xmean) / xstd
 
-            # linear GRAPPA interpolation 
-            Y = [(A@w).view(self.sms, self.coils, nr, -1) for w in self.weights]
-            out_linear = torch.zeros((self.sms, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=data.dtype, device=data.device)
-            for rfe, rpe in self.start_inds:
-                out_linear[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
+        # linear GRAPPA interpolation 
+        Y = [(A@w).view(self.sms, self.coils, nr, -1) for w in self.weights]
+        out_linear = torch.zeros((self.sms, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=data.dtype, device=data.device)
+        for rfe, rpe in self.start_inds:
+            out_linear[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
 
-            # do the nonlinear interpolation 
-            out = torch.zeros((self.sms, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=data.dtype, device=data.device)
-            for k in range(len(self.start_inds)):
-                rfe, rpe = self.start_inds[k]
-                for s in range(self.sms):
-                    model = load_complex_net(self.model_paths[k][s], self.net_type, X.shape[1], self.coils, num_layers=self.num_layers, hidden_size=self.hidden_size).to(X.device)
-                    pred = model(X)
-                    if self.scale_data:
-                        pred = pred*xstd + xmean 
-                        pred = pred.permute(1,0).view(self.coils, nr, -1)
-                        out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = self.linear_weight * out_linear[s,:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
-                        
-            # zero-fill to final matrix size 
-            if self.final_matrix_size is not None:
-                out = interp_to_matrix_size(out, self.final_matrix_size)
+        # do the nonlinear interpolation 
+        out = torch.zeros((self.sms, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=data.dtype, device=data.device)
+        for k in range(len(self.start_inds)):
+            rfe, rpe = self.start_inds[k]
+            for s in range(self.sms):
+                model = load_complex_net(self.model_paths[k][s], self.net_type, X.shape[1], self.coils, num_layers=self.num_layers, hidden_size=self.hidden_size).to(X.device)
+                pred = model(X)
+                if self.scale_data:
+                    pred = pred*xstd + xmean 
+                    pred = pred.permute(1,0).view(self.coils, nr, -1)
+                    out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = self.linear_weight * out_linear[s,:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
+                    
+        # zero-fill to final matrix size 
+        if self.final_matrix_size is not None:
+            out = interp_to_matrix_size(out, self.final_matrix_size)
 
-            # get coil-combined image 
-            img = ifft2d(out, dims=(2,3))
-            rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
+        # get coil-combined image 
+        img = ifft2d(out, dims=(2,3))
+        rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
-            return out.detach(), rss.detach()
+        return out.detach(), rss.detach()
