@@ -127,8 +127,8 @@ class split_slice_raki:
                 pred = model(X)
                 if self.scale_data:
                     pred = pred*xstd + xmean 
-                    pred = pred.permute(1,0).view(self.coils, nr, -1)
-                    out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = self.linear_weight * out_linear[s,:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
+                pred = pred.permute(1,0).view(self.coils, nr, -1)
+                out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = self.linear_weight * out_linear[s,:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
                     
         # zero-fill to final matrix size 
         if self.final_matrix_size is not None:
