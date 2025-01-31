@@ -59,10 +59,6 @@ class split_slice_raki:
         A = get_kernel_patches(calib_data, kernel_size=self.kernel_size, accel=self.accel)
         A = torch.cat([A[None,s,:,:,:] for s in range(self.sms)], dim=2)
         self.kernel_shifts, self.start_inds, self.eff_kernel_size = get_kernel_shifts(self.kernel_size, self.accel) 
-        
-        # some print statements to help me
-        print(A.shape)
-        print(f"Kernel shifts: {self.kernel_shifts}; Start inds: {self.start_inds}; Effective kernel size: {self.eff_kernel_size}")
 
         # l2 regularization 
         AH = A.conj().transpose(2,3)
