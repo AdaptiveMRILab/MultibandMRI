@@ -76,9 +76,11 @@ class split_slice_raki:
         # point (i.e., to account for in-plane acceleration)
         self.weights = [] # this will hold linear GRAPPA reconstruction weights 
         self.model_paths = []  # this will hold the trained RAKI model weights 
+        I = torch.eye(self.sms, dtype=torch.float32, device=calib_data.device)
         for shifts in self.kernel_shifts:
 
-            b = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
+            y = get_kernel_points(calib_data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
+            b = torch.stack([torch.cat([y[d,...] * I[d,n] for n in range(self.sms)],1) for d in range(self.sms)],dim=0)
             w = AHA_inv @ (AH @ b)
             self.weights.append(w)
 
