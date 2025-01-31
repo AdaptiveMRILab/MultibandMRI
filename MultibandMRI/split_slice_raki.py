@@ -7,23 +7,23 @@ from MultibandMRI import get_kernel_patches, get_kernel_points, get_kernel_shift
 class split_slice_raki:
 
     def __init__(self,
-                calib_data: Tensor,
-                recon_folder: str,
-                accel: Tuple=(1,1),
-                kernel_size: Tuple=(3,3),
-                tik: float=0.0,
-                final_matrix_size: Tuple=None,
-                num_layers: int=4,
-                hidden_size: int=128,
-                num_epochs: int=100,
-                random_seed: int=42,
-                learn_rate: float=1e-4,
-                train_split: float=0.75,
-                scale_data: bool=False,
-                loss_function: str='L1_L2',
-                l2_frac: float=0.5,
-                net_type: str='MLP',
-                linear_weight: float=1.0):
+                 calib_data: Tensor,
+                 recon_folder: str,
+                 accel: Tuple=(1,1),
+                 kernel_size: Tuple=(3,3),
+                 tik: float=0.0,
+                 final_matrix_size: Tuple=None,
+                 num_layers: int=4,
+                 hidden_size: int=128,
+                 num_epochs: int=100,
+                 random_seed: int=42,
+                 learn_rate: float=1e-4,
+                 train_split: float=0.75,
+                 scale_data: bool=False,
+                 loss_function: str='L1_L2',
+                 l2_frac: float=0.5,
+                 net_type: str='MLP',
+                 linear_weight: float=1.0):
 
         '''
         Input:
