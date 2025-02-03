@@ -1,7 +1,6 @@
 import torch 
 from torch import Tensor 
 from typing import Tuple 
-import numpy as np
 
 def fft1d(inp, dim):
     return torch.fft.fftshift(torch.fft.fft(torch.fft.fftshift(inp, dim=dim), dim=dim), dim=dim)
