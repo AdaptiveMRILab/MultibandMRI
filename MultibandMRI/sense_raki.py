@@ -150,4 +150,4 @@ class sense_raki:
         slc_ksp = fft2d(img, dims=(2,3))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
-        return slc_ksp, rss
+        return slc_ksp.detach(), rss.detach()
