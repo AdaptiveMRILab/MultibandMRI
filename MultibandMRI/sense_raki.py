@@ -133,7 +133,7 @@ class sense_raki:
             if self.scale_data:
                 pred = pred*xstd + xmean 
             pred = pred.permute(1,0).view(self.coils, nr, -1)
-            out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = self.linear_weight * out_linear[:,:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
+            out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = self.linear_weight * out_linear[:,:,rfe::self.accel[0],rpe::self.accel[1]] # + pred # Commented out prediction value
 
         # final interpolation 
         if self.final_matrix_size is not None:
