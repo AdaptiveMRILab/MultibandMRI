@@ -35,7 +35,7 @@ class sense_raki:
         '''
 
         self.sms, self.coils, _, _ = calib_data.shape
-        self.accel = accel
+        self.accel = (self.sms, accel[1])
         self.kernel_size = kernel_size 
         self.tik = tik 
         self.final_matrix_size = final_matrix_size
@@ -124,17 +124,16 @@ class sense_raki:
         for rfe, rpe in self.start_inds:
             out_linear[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
 
-        # # do the nonlinear interpolation 
-        # out = torch.zeros((1, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=data.dtype, device=data.device)
-        # for k in range(len(self.start_inds)):
-        #     rfe, rpe = self.start_inds[k]
-        #     model = load_complex_net(self.model_paths[k], self.net_type, X.shape[1], self.coils, num_layers=self.num_layers, hidden_size=self.hidden_size).to(X.device)
-        #     pred = model(X)
-        #     if self.scale_data:
-        #         pred = pred*xstd + xmean 
-        #     pred = pred.permute(1,0).view(self.coils, nr, -1)
-        #     out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = self.linear_weight * out_linear[:,:,rfe::self.accel[0],rpe::self.accel[1]] # + pred # Commented out prediction value
-        out = out_linear
+        # do the nonlinear interpolation 
+        out = torch.zeros((1, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=data.dtype, device=data.device)
+        for k in range(len(self.start_inds)):
+            rfe, rpe = self.start_inds[k]
+            model = load_complex_net(self.model_paths[k], self.net_type, X.shape[1], self.coils, num_layers=self.num_layers, hidden_size=self.hidden_size).to(X.device)
+            pred = model(X)
+            if self.scale_data:
+                pred = pred*xstd + xmean 
+            pred = pred.permute(1,0).view(self.coils, nr, -1)
+            out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = self.linear_weight * out_linear[:,:,rfe::self.accel[0],rpe::self.accel[1]] + pred
 
         # final interpolation 
         if self.final_matrix_size is not None:
