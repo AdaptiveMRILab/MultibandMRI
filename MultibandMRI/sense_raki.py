@@ -84,21 +84,16 @@ class sense_raki:
             # get the target data (difference between acquired data and weighted GRAPPA-reconstructed data)
             rhs = b - self.linear_weight*A@w
 
-            print("rhs shape:", rhs.shape)
-
-            # train a model for each slice
-            slice_model_paths = []
-            for s in range(self.sms):
-                model_path = os.path.join(self.recon_folder, 'model_shift%i_slice%i.pt'%(self.kernel_shifts.index(shifts), s))
-                X = A[0,0,:,:]
-                Y = rhs[s,:,:,0].permute(1,0) # HERE IS WHERE THE ERROR WAS WHEN RUNNING ON THE SERVER
-                _, train_loss, val_loss  = train_complex_net(X, Y, model_path, self.net_type, self.train_split, 
-                                            num_layers=self.num_layers, hidden_size=self.hidden_size, 
-                                            num_epochs=self.num_epochs, learn_rate=self.learn_rate, 
-                                            random_seed=self.random_seed, scale_data=self.scale_data,
-                                            loss_function=self.loss_function, l2_frac=self.l2_frac)
-                slice_model_paths.append(model_path)
-            self.model_paths.append(slice_model_paths)
+            # train a model
+            model_path = os.path.join(self.recon_folder, 'model_shift%i.pt'%(self.kernel_shifts.index(shifts)))
+            X = A[0,0,:,:]
+            Y = rhs[0,:,:,0].permute(1,0)
+            _, train_loss, val_loss  = train_complex_net(X, Y, model_path, self.net_type, self.train_split, 
+                                        num_layers=self.num_layers, hidden_size=self.hidden_size, 
+                                        num_epochs=self.num_epochs, learn_rate=self.learn_rate, 
+                                        random_seed=self.random_seed, scale_data=self.scale_data,
+                                        loss_function=self.loss_function, l2_frac=self.l2_frac)
+            self.model_paths.append(model_path)
 
 
     def apply(self, inp_data):
@@ -130,16 +125,15 @@ class sense_raki:
             out_linear[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
 
         # do the nonlinear interpolation 
-        out = torch.zeros((self.sms, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=data.dtype, device=data.device)
+        out = torch.zeros((self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=data.dtype, device=data.device)
         for k in range(len(self.start_inds)):
             rfe, rpe = self.start_inds[k]
-            for s in range(self.sms):
-                model = load_complex_net(self.model_paths[k][s], self.net_type, X.shape[1], self.coils, num_layers=self.num_layers, hidden_size=self.hidden_size).to(X.device)
-                pred = model(X)
-                if self.scale_data:
-                    pred = pred*xstd + xmean 
-                pred = pred.permute(1,0).view(self.coils, nr, -1)
-                out[s,:,rfe::self.accel[0],rpe::self.accel[1]] = self.linear_weight * out_linear[s,:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
+            model = load_complex_net(self.model_paths[k], self.net_type, X.shape[1], self.coils, num_layers=self.num_layers, hidden_size=self.hidden_size).to(X.device)
+            pred = model(X)
+            if self.scale_data:
+                pred = pred*xstd + xmean 
+            pred = pred.permute(1,0).view(self.coils, nr, -1)
+            out[:,rfe::self.accel[0],rpe::self.accel[1]] = self.linear_weight * out_linear[:,rfe::self.accel[0],rpe::self.accel[1]] + pred 
 
         # final interpolation 
         if self.final_matrix_size is not None:

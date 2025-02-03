@@ -83,8 +83,6 @@ class split_slice_raki:
             # get the target data (difference between acquired data and weighted GRAPPA-reconstructed data)
             rhs = b - self.linear_weight*A@w
 
-            print("rhs shape:", rhs.shape)
-
             # train a model for each slice
             slice_model_paths = []
             for s in range(self.sms):
