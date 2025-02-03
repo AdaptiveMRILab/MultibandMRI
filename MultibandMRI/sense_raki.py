@@ -84,12 +84,14 @@ class sense_raki:
             # get the target data (difference between acquired data and weighted GRAPPA-reconstructed data)
             rhs = b - self.linear_weight*A@w
 
+            print("rhs shape:", rhs.shape)
+
             # train a model for each slice
             slice_model_paths = []
             for s in range(self.sms):
                 model_path = os.path.join(self.recon_folder, 'model_shift%i_slice%i.pt'%(self.kernel_shifts.index(shifts), s))
                 X = A[0,0,:,:]
-                Y = rhs[s,:,:,0].permute(1,0)
+                Y = rhs[s,:,:,0].permute(1,0) # HERE IS WHERE THE ERROR WAS WHEN RUNNING ON THE SERVER
                 _, train_loss, val_loss  = train_complex_net(X, Y, model_path, self.net_type, self.train_split, 
                                             num_layers=self.num_layers, hidden_size=self.hidden_size, 
                                             num_epochs=self.num_epochs, learn_rate=self.learn_rate, 
