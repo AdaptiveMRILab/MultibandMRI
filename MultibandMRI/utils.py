@@ -303,8 +303,6 @@ class CoilCompress:
         self.vcoils = vcoils
         self.maxPoints = maxPoints
         self.calcCompression(data)
-        self.U = None
-        self.Uh = None
 
     def calcCompression(self, data):
         dataMask = (torch.abs(data[:,0,...])>0.0).int()
