@@ -307,7 +307,7 @@ class CoilCompress:
         dataMask = (torch.abs(data[:,0,...])>0.0).int()
         mtrx = torch.zeros((self.ncoils, torch.sum(dataMask)), dtype=data.dtype, device=data.device)
         for c in range(self.ncoils):
-            mtrx[c,:] = data[:,c,...][dataMask > 0]
+            mtrx[:,c] = data[:,c,...][dataMask > 0]
         if self.maxPoints is not None:
             inds = torch.argsort(-torch.sum(torch.abs(mtrx),dim=0))
             mtrx = mtrx[:,inds[:self.maxPoints]]
@@ -316,10 +316,10 @@ class CoilCompress:
         self.Uh = torch.conj(self.U.T)
  
     def compress(self, data):
-        dataMask = (torch.abs(data[:,0,...])> 0.0).int()
+        dataMask = (torch.abs(data[:,0,...])>0.0).int()
         mtrx = torch.zeros((torch.sum(dataMask), self.ncoils), dtype=data.dtype, device=data.device)
         for c in range(self.ncoils):
-            mtrx[:, c] = data[:,c,...][dataMask > 0]
+            mtrx[:,c] = data[:,c,...][dataMask > 0]
         mtrx = mtrx @ self.U
         ccdata = torch.zeros((data.shape[0], self.vcoils, data.shape[2], data.shape[3]), dtype=data.dtype, device=data.device)
         for c in range(self.vcoils):
