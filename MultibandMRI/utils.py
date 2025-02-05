@@ -321,7 +321,7 @@ class CoilCompress:
         for c in range(self.ncoils):
             mtrx[:,c] = data[:,c,...][dataMask > 0]
         mtrx = mtrx @ self.U
-        ccdata = torch.zeros((data.shape[0], self.vcoils, data.shape[1], data.shape[2]), dtype=data.dtype, device=data.device)
+        ccdata = torch.zeros((data.shape[0], self.vcoils, data.shape[2], data.shape[3]), dtype=data.dtype, device=data.device)
         for c in range(self.vcoils):
             tmp = torch.zeros_like(data[:,0,...])
             tmp[dataMask > 0] = mtrx[:, c]
