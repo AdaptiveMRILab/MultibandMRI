@@ -321,44 +321,9 @@ class CoilCompress:
         for c in range(self.ncoils):
             mtrx[:,c] = data[:,c,...][dataMask > 0]
         mtrx = mtrx @ self.U
-        ccdata = torch.zeros((data.shape[0], self.vcoils, data.shape[2], data.shape[3]), dtype=data.dtype, device=data.device)
+        ccdata = torch.zeros((data.shape[0], self.vcoils, data.shape[1], data.shape[2]), dtype=data.dtype, device=data.device)
         for c in range(self.vcoils):
             tmp = torch.zeros_like(data[:,0,...])
             tmp[dataMask > 0] = mtrx[:, c]
             ccdata[:,c,...] = tmp.clone()
-        return ccdata
-    
-class CoilCompress2:
-    def __init__(self, data, vcoils, maxPoints=2000):
-        super(CoilCompress2,self).__init__()
-        ncoils = data.shape[-1]
-        assert vcoils <= ncoils, 'Number of compressed virtual coils (%i) must be <= number of physical coils (%i)'%(vcoils,ncoils)
-        self.ncoils = ncoils
-        self.vcoils = vcoils
-        self.maxPoints = maxPoints
-        self.calcCompression(data)
-
-    def calcCompression(self, data):
-        dataMask = (torch.abs(data[...,0])>0.0).int()
-        mtrx = torch.zeros((self.ncoils, torch.sum(dataMask)), dtype=data.dtype, device=data.device)
-        for c in range(self.ncoils):
-            mtrx[c,:] = data[...,c][dataMask > 0]
-        if self.maxPoints is not None:
-            inds = torch.argsort(-torch.sum(torch.abs(mtrx),dim=0))
-            mtrx = mtrx[:,inds[:self.maxPoints]]
-        u, _, _ = torch.linalg.svd(mtrx, full_matrices=False)
-        self.U = u[:, :self.vcoils]
-        self.Uh = torch.conj(self.U.T)
- 
-    def compress(self, data):
-        dataMask = (torch.abs(data[...,0])>0.0).int()
-        mtrx = torch.zeros((torch.sum(dataMask), self.ncoils), dtype=data.dtype, device=data.device)
-        for c in range(self.ncoils):
-            mtrx[:,c] = data[...,c][dataMask > 0]
-        mtrx = mtrx @ self.U
-        ccdata = torch.zeros((data.shape[0], data.shape[1], data.shape[2], self.vcoils), dtype=data.dtype, device=data.device)
-        for c in range(self.vcoils):
-            tmp = torch.zeros_like(data[...,0])
-            tmp[dataMask > 0] = mtrx[:, c]
-            ccdata[...,c] = tmp.clone()
         return ccdata
