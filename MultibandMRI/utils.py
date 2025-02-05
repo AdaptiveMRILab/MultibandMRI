@@ -330,7 +330,7 @@ class CoilCompress:
     
 class CoilCompress2:
     def __init__(self, data, vcoils, maxPoints=2000):
-        super(CoilCompress,self).__init__()
+        super(CoilCompress2,self).__init__()
         ncoils = data.shape[-1]
         assert vcoils <= ncoils, 'Number of compressed virtual coils (%i) must be <= number of physical coils (%i)'%(vcoils,ncoils)
         self.ncoils = ncoils
