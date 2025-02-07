@@ -67,7 +67,7 @@ class sense_grappa:
 
         for slice_idx in range(self.sms):
             phase_shift = np.exp(1j * np.pi * slice_idx / self.sms)
-            inp_data[slice_idx, :, :, :] *= phase_shift
+            inp_data[:, :, slice_idx::self.sms, :] *= phase_shift
 
         # zero-fill data 
         data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms*inp_data.shape[2], inp_data.shape[3]), dtype=inp_data.dtype, device=inp_data.device)
