@@ -61,9 +61,13 @@ class sense_grappa:
         # if self.sms % 2 == 0: inp_data[:,:,1::2,:] = inp_data[:,:,1::2,:] * np.exp(1j*np.pi)
 
         # Apply FOV shift correction for SMS and acceleration factors
+        # for slice_idx in range(self.sms):
+        #     phase_shift = np.exp(1j * np.pi * slice_idx / (self.sms * self.accel[1]))
+        #     inp_data[:, :, slice_idx::self.sms, :] *= phase_shift
+
         for slice_idx in range(self.sms):
-            phase_shift = np.exp(1j * np.pi * slice_idx / (self.sms * self.accel[1]))
-            inp_data[:, :, slice_idx::self.sms, :] *= phase_shift
+            phase_shift = np.exp(1j * np.pi * slice_idx / self.sms)
+            inp_data[slice_idx, :, :, :] *= phase_shift
 
         # zero-fill data 
         data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms*inp_data.shape[2], inp_data.shape[3]), dtype=inp_data.dtype, device=inp_data.device)
