@@ -59,10 +59,10 @@ class sense_grappa:
 
         # # readout FOV of extended-FOV images is no longer centered for an even number of simultaneously excited slices. add FOV/2 shift here
         # if self.sms % 2 == 0: inp_data[:,:,1::2,:] = inp_data[:,:,1::2,:] * np.exp(1j*np.pi)
-        
+
         # Apply FOV shift correction for SMS and acceleration factors
         for slice_idx in range(self.sms):
-            phase_shift = np.exp(1j * np.pi * slice_idx / (self.sms * self.accel[0]))
+            phase_shift = np.exp(1j * np.pi * slice_idx / (self.sms * self.accel[1]))
             inp_data[:, :, slice_idx::self.sms, :] *= phase_shift
 
         # zero-fill data 
