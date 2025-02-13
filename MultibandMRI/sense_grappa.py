@@ -58,10 +58,10 @@ class sense_grappa:
     def apply(self, inp_data):
 
         # readout FOV of extended-FOV images is no longer centered for an even number of simultaneously excited slices. add FOV/2 shift here
-        if self.sms % 2 == 0: inp_data[:,:,1::2,:] = inp_data[:,:,1::2,:] * np.exp(1j*np.pi)
-        if self.accel[1] == 3: 
-            inp_data[:,:,1::3,:] = inp_data[:,:,1::3,:] * np.exp(1j*np.pi/3)
-            inp_data[:,:,2::3,:] = inp_data[:,:,2::3,:] * np.exp(-1j*np.pi/3)
+        # if self.sms % 2 == 0: inp_data[:,:,1::2,:] = inp_data[:,:,1::2,:] * np.exp(1j*np.pi)
+        # if self.accel[1] == 3: 
+        #     inp_data[:,:,1::3,:] = inp_data[:,:,1::3,:] * np.exp(1j*np.pi/3)
+        #     inp_data[:,:,2::3,:] = inp_data[:,:,2::3,:] * np.exp(-1j*np.pi/3)
 
         # zero-fill data 
         data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms*inp_data.shape[2], inp_data.shape[3]), dtype=inp_data.dtype, device=inp_data.device)
