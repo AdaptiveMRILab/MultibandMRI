@@ -61,7 +61,7 @@ class sense_grappa:
         if self.sms % 2 == 0: inp_data[:,:,1::2,:] = inp_data[:,:,1::2,:] * np.exp(1j*np.pi)
         if self.accel[1] == 3: 
             inp_data[:,:,:,1::3] = inp_data[:,:,:,1::3] * 0 #np.exp(1j*np.pi)
-            inp_data[:,:,:,2::3] = inp_data[:,:,:,2::3] * 0 #np.exp(-1j*np.pi)
+            # inp_data[:,:,:,2::3] = inp_data[:,:,:,2::3] * 0 #np.exp(-1j*np.pi)
             inp_data[:,:,:,3::3] = inp_data[:,:,:,3::3] * 0 #np.exp(1j*np.pi)
 
         # zero-fill data 
