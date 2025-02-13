@@ -89,7 +89,4 @@ class sense_grappa:
         slc_ksp = fft2d(img, dims=(2,3))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
-        print(slc_ksp.shape)
-        print(rss.shape)
-
         return slc_ksp, rss
