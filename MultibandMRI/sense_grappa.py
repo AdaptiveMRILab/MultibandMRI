@@ -27,7 +27,6 @@ class sense_grappa:
         self.tik = tik 
         self.final_matrix_size = final_matrix_size
         self.calibrate(calib_data)
-        self.calib_data = calib_data # added for troubleshooting
 
     def calibrate(self, data):
 
@@ -45,7 +44,7 @@ class sense_grappa:
         print('Troubleshooting: Sample kernel patches: ', A[0,0,:,:])
         print('Troubleshooting: Kernel shifts: ', self.kernel_shifts)
         print("Number of patches extracted:", A.shape[2])
-        print("Expected number of patches:", (self.calib_data.shape[2] - self.kernel_size[0] + 1) * (self.calib_data.shape[3] - self.kernel_size[1] + 1))
+        print("Expected number of patches:", (data.shape[2] - self.kernel_size[0] + 1) * (data.shape[3] - self.kernel_size[1] + 1))
 
         # l2 regularization 
         AH = A.conj().transpose(2,3)
