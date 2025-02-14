@@ -22,8 +22,7 @@ class sense_grappa:
         '''
 
         self.sms, self.coils, _, _ = calib_data.shape
-        # self.accel = (self.sms, accel[1])
-        self.accel = accel
+        self.accel = (self.sms, accel[1])
         self.kernel_size = kernel_size 
         self.tik = tik 
         self.final_matrix_size = final_matrix_size
