@@ -34,6 +34,13 @@ class split_slice_grappa:
         A = torch.cat([A[None,s,:,:,:] for s in range(self.sms)], dim=2)
         self.kernel_shifts, self.start_inds, self.eff_kernel_size = get_kernel_shifts(self.kernel_size, self.accel) 
 
+        # Added some troublehsooting print statements
+        print('Troubleshooting: Kernel patches shape: ', A.shape)
+        print('Troubleshooting: Sample kernel patches: ', A[0,0,:,:])
+        print('Troubleshooting: Kernel shifts: ', self.kernel_shifts)
+        print("Number of patches extracted:", A.shape[2])
+        print("Expected number of patches:", (calib_data.shape[2] - self.kernel_size[0] + 1) * (calib_data.shape[3] - self.kernel_size[1] + 1))
+
         # l2 regularization 
         AH = A.conj().transpose(2,3)
         _,S,_ = torch.linalg.svd(A, full_matrices=False)
