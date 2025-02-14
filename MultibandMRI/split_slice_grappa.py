@@ -38,8 +38,6 @@ class split_slice_grappa:
         print('Troubleshooting: Kernel patches shape: ', A.shape)
         print('Troubleshooting: Sample kernel patches: ', A[0,0,:,:])
         print('Troubleshooting: Kernel shifts: ', self.kernel_shifts)
-        print("Number of patches extracted:", A.shape[2])
-        print("Expected number of patches:", (calib_data.shape[2] - self.kernel_size[0] + 1) * (calib_data.shape[3] - self.kernel_size[1] + 1))
 
         # l2 regularization 
         AH = A.conj().transpose(2,3)
