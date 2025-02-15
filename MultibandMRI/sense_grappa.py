@@ -39,10 +39,10 @@ class sense_grappa:
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel)
         self.kernel_shifts, self.start_inds, self.eff_kernel_size = get_kernel_shifts(self.kernel_size, self.accel) 
 
-        # Added some troublehsooting print statements
-        print('Troubleshooting: Kernel patches shape: ', A.shape)
-        print('Troubleshooting: Sample kernel patches: ', A[0,0,:,:])
-        print('Troubleshooting: Kernel shifts: ', self.kernel_shifts)
+        # # Added some troublehsooting print statements
+        # print('Troubleshooting: Kernel patches shape: ', A.shape)
+        # print('Troubleshooting: Sample kernel patches: ', A[0,0,:,:])
+        # print('Troubleshooting: Kernel shifts: ', self.kernel_shifts)
 
         # l2 regularization 
         AH = A.conj().transpose(2,3)
@@ -76,9 +76,9 @@ class sense_grappa:
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
         Y = [(A@w).view(1, self.coils, nr, nc) for w in self.weights]
 
-        # Added some troubleshooting print statements
-        print("Troubleshooting: Interpolated data shape: ", len(Y), Y[0].shape)
-        print("Troubleshooting: Sample interpolated data: ", Y[0])
+        # # Added some troubleshooting print statements
+        # print("Troubleshooting: Interpolated data shape: ", len(Y), Y[0].shape)
+        # print("Troubleshooting: Sample interpolated data: ", Y[0])
 
         out = torch.zeros((1, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=inp_data.dtype, device=inp_data.device)
         for rfe, rpe in self.start_inds:
