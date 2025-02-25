@@ -42,6 +42,8 @@ class split_slice_grappa:
         I = torch.eye(AH.shape[2], dtype=A.dtype, device=A.device)[None,None,:,:]
         AHA_inv = torch.linalg.inv(AH@A + lamda*I)
 
+        print(self.accel)
+
         # calculate the weights for each offset relative to "top left" kernel
         # point (i.e., to account for in-plane acceleration)
         self.weights = []
