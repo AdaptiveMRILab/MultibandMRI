@@ -43,7 +43,6 @@ class sense_grappa:
         # print('Troubleshooting: Kernel patches shape: ', A.shape)
         # print('Troubleshooting: Sample kernel patches: ', A[0,0,:,:])
         # print('Troubleshooting: Kernel shifts: ', self.kernel_shifts)
-        print(self.accel)
 
         # l2 regularization 
         AH = A.conj().transpose(2,3)
