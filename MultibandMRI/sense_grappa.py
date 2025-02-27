@@ -3,6 +3,7 @@ from torch import Tensor
 from typing import Tuple 
 import numpy as np 
 from MultibandMRI import get_kernel_patches, get_kernel_points, get_num_interpolated_points, get_kernel_shifts, interp_to_matrix_size, ifft1d, fft1d, fft2d, ifft2d
+import matplotlib.pyplot as plt
 
 class sense_grappa:
 
@@ -91,6 +92,12 @@ class sense_grappa:
 
         # data consistency
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
+
+        print(out.shape)
+        plt.figure()
+        plt.title('K-space plot')
+        plt.imshow(np.log10(np.abs(out)))
+        plt.show
 
         # bring to the image domain and crop slices
         nread = inp_data.shape[2]
