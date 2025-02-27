@@ -108,7 +108,8 @@ class sense_grappa:
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
         # Troubleshooting: plot the kspace
-        slc_ksp = slc_ksp / 10
+        if self.accel[1] == 3:
+            slc_ksp = slc_ksp / 100
         print(slc_ksp.shape)
         slc_ksp[0,0,0:4,:] = 0
         slc_ksp[0,0,:,0:4] = 0
