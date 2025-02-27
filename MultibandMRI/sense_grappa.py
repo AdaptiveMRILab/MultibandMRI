@@ -109,7 +109,7 @@ class sense_grappa:
 
         # Troubleshooting: plot the kspace
         if self.accel[1] == 3:
-            slc_ksp = slc_ksp / 100
+            slc_ksp = slc_ksp / 100000
         print(slc_ksp.shape)
         slc_ksp[0,0,0:4,:] = 0
         slc_ksp[0,0,:,0:4] = 0
