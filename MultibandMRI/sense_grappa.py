@@ -109,6 +109,7 @@ class sense_grappa:
 
         # Troubleshooting: plot the kspace
         print(slc_ksp.shape)
+        print(slc_ksp[0,0,256,256])
         slc_ksp[0,0,0:4,:] = 0
         slc_ksp[0,0,:,0:4] = 0
         slc_ksp[0,0,:,252:256] = 0

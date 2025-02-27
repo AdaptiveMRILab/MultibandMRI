@@ -69,4 +69,7 @@ class slice_grappa:
         img = ifft2d(out, dims=(2,3))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
+        print(out.shape)
+        print(out[0,0,256,256])
+
         return out, rss
