@@ -95,6 +95,8 @@ class sense_grappa:
 
         # Troubleshooting: plot the kspace
         print(out.shape)
+        if self.accel[1] == 3:
+            out = out / 100
         plt.figure()
         plt.title('K-space plot')
         plt.imshow(np.log10(np.abs(out[0,0,:,:].cpu().numpy())))
