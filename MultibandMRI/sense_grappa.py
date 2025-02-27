@@ -93,12 +93,12 @@ class sense_grappa:
         # data consistency
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
 
-        # Troubleshooting: plot the kspace
-        print(out.shape)
-        plt.figure()
-        plt.title('K-space plot')
-        plt.imshow(np.log10(np.abs(out[0,0,:,:].cpu().numpy())))
-        plt.show
+        # # Troubleshooting: plot the kspace
+        # print(out.shape)
+        # plt.figure()
+        # plt.title('K-space plot')
+        # plt.imshow(np.log10(np.abs(out[0,0,:,:].cpu().numpy())))
+        # plt.show
 
         # bring to the image domain and crop slices
         nread = inp_data.shape[2]
@@ -107,12 +107,12 @@ class sense_grappa:
         slc_ksp = fft2d(img, dims=(2,3))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
-        # Troubleshooting: plot the kspace
-        print(slc_ksp.shape)
-        plt.figure()
-        plt.title('K-space plot')
-        plt.imshow(np.log10(np.abs(slc_ksp[0,0,:,:].cpu().numpy())))
-        plt.colorbar()
-        plt.show
+        # # Troubleshooting: plot the kspace
+        # print(slc_ksp.shape)
+        # plt.figure()
+        # plt.title('K-space plot')
+        # plt.imshow(np.log10(np.abs(slc_ksp[0,0,:,:].cpu().numpy())))
+        # plt.colorbar()
+        # plt.show
 
         return slc_ksp, rss
