@@ -118,6 +118,7 @@ class sense_grappa:
         plt.figure()
         plt.title('K-space plot')
         plt.imshow(np.log10(np.abs(slc_ksp[0,0,:,:].cpu().numpy())))
+        plt.colorbar()
         plt.show
 
         return slc_ksp, rss
