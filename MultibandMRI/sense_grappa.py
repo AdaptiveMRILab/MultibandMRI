@@ -96,7 +96,7 @@ class sense_grappa:
         print(out.shape)
         plt.figure()
         plt.title('K-space plot')
-        plt.imshow(np.log10(np.abs(out)))
+        plt.imshow(np.log10(np.abs(out[0,0,:,:])))
         plt.show
 
         # bring to the image domain and crop slices
