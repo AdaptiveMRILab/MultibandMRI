@@ -93,6 +93,7 @@ class sense_grappa:
         # data consistency
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
 
+        # Troubleshooting: plot the kspace
         print(out.shape)
         plt.figure()
         plt.title('K-space plot')
@@ -106,7 +107,10 @@ class sense_grappa:
         slc_ksp = fft2d(img, dims=(2,3))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
+        # Troubleshooting: plot the kspace
         print(slc_ksp.shape)
+        slc_ksp[0,0,0:15,0:15] = 0
+        slc_ksp[0,0,240:255,240:255] = 0
         plt.figure()
         plt.title('K-space plot')
         plt.imshow(np.log10(np.abs(slc_ksp[0,0,:,:].cpu().numpy())))
