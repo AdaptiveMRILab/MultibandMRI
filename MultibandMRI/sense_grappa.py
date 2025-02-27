@@ -109,7 +109,7 @@ class sense_grappa:
 
         # Troubleshooting: plot the kspace
         print(slc_ksp.shape)
-        slc_ksp[0,0,64,:] = 0
+        slc_ksp[0,0,:,64] = 0
         plt.figure()
         plt.title('K-space plot')
         plt.imshow(np.log10(np.abs(slc_ksp[0,0,:,:].cpu().numpy())))
