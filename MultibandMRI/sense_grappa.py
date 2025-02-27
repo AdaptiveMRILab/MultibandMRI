@@ -106,4 +106,10 @@ class sense_grappa:
         slc_ksp = fft2d(img, dims=(2,3))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
+        print(slc_ksp.shape)
+        plt.figure()
+        plt.title('K-space plot')
+        plt.imshow(np.log10(np.abs(slc_ksp[0,0,:,:].cpu().numpy())))
+        plt.show
+
         return slc_ksp, rss
