@@ -40,11 +40,6 @@ class sense_grappa:
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel)
         self.kernel_shifts, self.start_inds, self.eff_kernel_size = get_kernel_shifts(self.kernel_size, self.accel) 
 
-        # # Added some troublehsooting print statements
-        # print('Troubleshooting: Kernel patches shape: ', A.shape)
-        # print('Troubleshooting: Sample kernel patches: ', A[0,0,:,:])
-        # print('Troubleshooting: Kernel shifts: ', self.kernel_shifts)
-
         # l2 regularization 
         AH = A.conj().transpose(2,3)
         _,S,_ = torch.linalg.svd(A, full_matrices=False)
@@ -77,10 +72,6 @@ class sense_grappa:
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
         Y = [(A@w).view(1, self.coils, nr, nc) for w in self.weights]
 
-        # # Added some troubleshooting print statements
-        # print("Troubleshooting: Interpolated data shape: ", len(Y), Y[0].shape)
-        # print("Troubleshooting: Sample interpolated data: ", Y[0])
-
         out = torch.zeros((1, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=inp_data.dtype, device=inp_data.device)
         for rfe, rpe in self.start_inds:
             out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
@@ -93,26 +84,11 @@ class sense_grappa:
         # data consistency
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
 
-        # # Troubleshooting: plot the kspace
-        # print(out.shape)
-        # plt.figure()
-        # plt.title('K-space plot')
-        # plt.imshow(np.log10(np.abs(out[0,0,:,:].cpu().numpy())))
-        # plt.show
-
         # bring to the image domain and crop slices
         nread = inp_data.shape[2]
         img = ifft2d(out, dims=(2,3))
         img = torch.stack([img[0,:,n*nread:(n+1)*nread,:] for n in range(self.sms)], axis=0)
         slc_ksp = fft2d(img, dims=(2,3))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
-
-        # # Troubleshooting: plot the kspace
-        # print(slc_ksp.shape)
-        # plt.figure()
-        # plt.title('K-space plot')
-        # plt.imshow(np.log10(np.abs(slc_ksp[0,0,:,:].cpu().numpy())))
-        # plt.colorbar()
-        # plt.show
 
         return slc_ksp, rss
