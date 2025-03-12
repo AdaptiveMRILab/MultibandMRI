@@ -79,7 +79,7 @@ def interp_to_matrix_size(inp: Tensor,
     colpst = colpad//2
     colpre = colpad - colpst
     #out = torch.nn.functional.pad(inp, (colpre, colpst, rowpre, rowpst), mode='constant', value=0) # original 
-    out = torch.nn.functional.pad(inp, (colpre, colpst, rowpre, rowpst), mode='constant', value=0)
+    out = torch.nn.functional.pad(inp, (colpst, colpre, rowpre, rowpst), mode='constant', value=0)
     #out = torch.nn.functional.pad(inp, (rowpre, rowpst, colpre, colpst), mode='constant', value=0)
     print(inp.shape)
     print(matrix_size)
