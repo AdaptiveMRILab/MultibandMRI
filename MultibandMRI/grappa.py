@@ -60,24 +60,9 @@ class grappa:
         for rfe, rpe in self.start_inds:
             out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
 
-        print('Before interp_to_matrix_size():')
-        print(out.shape) 
-        print()
         # final interpolation 
         if self.final_matrix_size is not None:
             out = interp_to_matrix_size(out, self.final_matrix_size)
-
-        print('Final matrix size:')
-        print(self.final_matrix_size)
-        print()
-
-        print('After interp_to_matrix_size():')
-        print(out.shape) 
-        print()
-
-        print('data:')
-        print(data.shape) 
-        print()
 
         # data consistency
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
