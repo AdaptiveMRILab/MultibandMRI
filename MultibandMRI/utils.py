@@ -214,9 +214,6 @@ class l1_l2_loss(torch.nn.Module):
         else:
             return (1.0 - self.l2_frac) * self.l1(input, target) + self.l2_frac * self.l2(input, target)
 
-
-
-
 def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4, hidden_size=128, bias=False, num_epochs=100, learn_rate=1e-4, scale_data=True, random_seed=42, loss_function='L1', l2_frac=0.5):
 
     torch.manual_seed(random_seed) 
@@ -295,3 +292,38 @@ def load_complex_net(model_path, net_type, in_size, out_size, num_layers, hidden
         model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size)
     model.load_state_dict(torch.load(model_path, weights_only=True))
     return model 
+
+class CoilCompress:
+    def __init__(self, data, vcoils, maxPoints=2000):
+        super(CoilCompress,self).__init__()
+        ncoils = data.shape[1]
+        assert vcoils <= ncoils, 'Number of compressed virtual coils (%i) must be <= number of physical coils (%i)'%(vcoils,ncoils)
+        self.ncoils = ncoils
+        self.vcoils = vcoils
+        self.maxPoints = maxPoints
+        self.calcCompression(data)
+
+    def calcCompression(self, data):
+        dataMask = (torch.abs(data[:,0,...])>0.0).int()
+        mtrx = torch.zeros((self.ncoils, torch.sum(dataMask)), dtype=data.dtype, device=data.device)
+        for c in range(self.ncoils):
+            mtrx[c,:] = data[:,c,...][dataMask > 0]
+        if self.maxPoints is not None:
+            inds = torch.argsort(-torch.sum(torch.abs(mtrx),dim=0))
+            mtrx = mtrx[:,inds[:self.maxPoints]]
+        u, _, _ = torch.linalg.svd(mtrx, full_matrices=False)
+        self.U = u[:, :self.vcoils]
+        self.Uh = torch.conj(self.U.T)
+ 
+    def compress(self, data):
+        dataMask = (torch.abs(data[:,0,...])>0.0).int()
+        mtrx = torch.zeros((torch.sum(dataMask), self.ncoils), dtype=data.dtype, device=data.device)
+        for c in range(self.ncoils):
+            mtrx[:,c] = data[:,c,...][dataMask > 0]
+        mtrx = mtrx @ self.U
+        ccdata = torch.zeros((data.shape[0], self.vcoils, data.shape[2], data.shape[3]), dtype=data.dtype, device=data.device)
+        for c in range(self.vcoils):
+            tmp = torch.zeros_like(data[:,0,...])
+            tmp[dataMask > 0] = mtrx[:, c]
+            ccdata[:,c,...] = tmp.clone()
+        return ccdata

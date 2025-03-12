@@ -3,6 +3,7 @@ from torch import Tensor
 from typing import Tuple 
 import numpy as np 
 from MultibandMRI import get_kernel_patches, get_kernel_points, get_num_interpolated_points, get_kernel_shifts, interp_to_matrix_size, ifft1d, fft1d, fft2d, ifft2d
+import matplotlib.pyplot as plt
 
 class sense_grappa:
 
@@ -70,6 +71,7 @@ class sense_grappa:
         # interpolate the missing points
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
         Y = [(A@w).view(1, self.coils, nr, nc) for w in self.weights]
+
         out = torch.zeros((1, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=inp_data.dtype, device=inp_data.device)
         for rfe, rpe in self.start_inds:
             out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
