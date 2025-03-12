@@ -62,6 +62,7 @@ class sense_grappa:
         if self.sms % 2 == 0: inp_data[:,:,1::2,:] = inp_data[:,:,1::2,:] * np.exp(1j*np.pi)
 
         # handling matrix sizes not evenly divisible by acceleration factor 
+        phase_matrix_size = inp_data.shape[3]
         if inp_data.shape[3] % self.accel[1]:
             npad = inp_data.shape[3] % self.accel[1]
             z = torch.zeros((inp_data.shape[0],inp_data.shape[1],inp_data.shape[2],npad), dtype=inp_data.dtype, device=inp_data.device)
@@ -86,6 +87,9 @@ class sense_grappa:
         if self.final_matrix_size is not None:
             adjusted_matrix_size = (self.sms*self.final_matrix_size[0], self.final_matrix_size[1])
             out = interp_to_matrix_size(out, adjusted_matrix_size)
+
+        # remove any extra zero padding lines that were added above
+        data = data[...,:phase_matrix_size]
 
         # data consistency
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
