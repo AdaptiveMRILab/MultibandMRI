@@ -57,18 +57,16 @@ class sense_grappa:
 
     def apply(self, inp_data):
 
-        flag = 0
-
         # readout FOV of extended-FOV images is no longer centered for an even number of simultaneously excited slices. add FOV/2 shift here
         if self.sms % 2 == 0: inp_data[:,:,1::2,:] = inp_data[:,:,1::2,:] * np.exp(1j*np.pi)
 
         # handling matrix sizes not evenly divisible by acceleration factor 
         phase_matrix_size = inp_data.shape[3]
         if inp_data.shape[3] % self.accel[1]:
-            npad = inp_data.shape[3] % self.accel[1]
+            npad = self.accel[1] - (inp_data.shape[3] % self.accel[1])
             z = torch.zeros((inp_data.shape[0],inp_data.shape[1],inp_data.shape[2],npad), dtype=inp_data.dtype, device=inp_data.device)
             inp_data = torch.cat([inp_data, z], dim=3)
-            
+
             # flag = 1
             # print("Data shape: ", inp_data.shape[3], "Acceleration: ", self.accel[1])
             # npad = self.accel[1] - (inp_data.shape[3] % self.accel[1])
@@ -103,10 +101,10 @@ class sense_grappa:
             out = interp_to_matrix_size(out, adjusted_matrix_size)
 
         # remove any extra zero padding lines that were added above
+        data = data[...,:phase_matrix_size]
         # if flag:
         #     data = data[...,front_pad:inp_data.shape[3]-back_pad]
         #     print(data.shape)
-        data = data[...,:phase_matrix_size]
 
         # data consistency
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
