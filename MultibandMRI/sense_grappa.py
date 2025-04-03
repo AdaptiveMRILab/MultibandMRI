@@ -99,7 +99,7 @@ class sense_grappa:
 
         # remove any extra zero padding lines that were added above
         if flag:
-            data = data[...,:phase_matrix_size]
+            data = data[...,front_pad:inp_data.shape[3]-back_pad]
 
         # data consistency
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
