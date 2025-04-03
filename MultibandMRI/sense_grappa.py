@@ -68,6 +68,7 @@ class sense_grappa:
             flag = 1
             print("Data shape: ", inp_data.shape[3], "Acceleration: ", self.accel[1])
             npad = self.accel[1] - (inp_data.shape[3] % self.accel[1])
+            npad = inp_data.shape[3] % self.accel[1]
             print("npad: ", npad)
             front_pad = int(npad/2) # Try even padding
             back_pad = npad - front_pad # Try even padding
@@ -98,9 +99,10 @@ class sense_grappa:
             out = interp_to_matrix_size(out, adjusted_matrix_size)
 
         # remove any extra zero padding lines that were added above
-        if flag:
-            data = data[...,front_pad:inp_data.shape[3]-back_pad]
-            print(data.shape)
+        # if flag:
+        #     data = data[...,front_pad:inp_data.shape[3]-back_pad]
+        #     print(data.shape)
+        data = data[...,:phase_matrix_size]
 
         # data consistency
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
