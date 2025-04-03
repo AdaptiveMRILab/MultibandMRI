@@ -101,6 +101,7 @@ class sense_grappa:
         if flag:
             data = data[...,front_pad:inp_data.shape[3]-back_pad]
             print(data.shape)
+            print(data)
 
         # data consistency
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
