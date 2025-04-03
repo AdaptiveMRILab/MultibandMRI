@@ -57,6 +57,8 @@ class sense_grappa:
 
     def apply(self, inp_data):
 
+        flag = 0
+
         # readout FOV of extended-FOV images is no longer centered for an even number of simultaneously excited slices. add FOV/2 shift here
         if self.sms % 2 == 0: inp_data[:,:,1::2,:] = inp_data[:,:,1::2,:] * np.exp(1j*np.pi)
 
@@ -120,7 +122,7 @@ class sense_grappa:
 
         return slc_ksp, rss
     
-        # def apply(self, inp_data):
+    # def apply(self, inp_data):
 
     #     # readout FOV of extended-FOV images is no longer centered for an even number of simultaneously excited slices. add FOV/2 shift here
     #     if self.sms % 2 == 0: inp_data[:,:,1::2,:] = inp_data[:,:,1::2,:] * np.exp(1j*np.pi)
