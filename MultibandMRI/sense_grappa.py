@@ -102,10 +102,11 @@ class sense_grappa:
             out = interp_to_matrix_size(out, adjusted_matrix_size)
 
         # remove any extra zero padding lines that were added above
-        data = data[...,:phase_matrix_size]
-        # if flag:
-        #     data = data[...,front_pad:inp_data.shape[3]-back_pad]
-        #     print(data.shape)
+        # data = data[...,:phase_matrix_size]
+
+        if flag:
+            data = data[...,front_pad:inp_data.shape[3]-back_pad]
+            print(data.shape)
 
         # data consistency
         out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
