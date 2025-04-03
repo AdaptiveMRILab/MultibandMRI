@@ -31,6 +31,8 @@ class sense_grappa:
 
     def calibrate(self, data):
 
+        print("test")
+
         # concatenate SMS data along readout dimension
         data = ifft1d(data, dim=2)
         data = torch.cat([data[None,s,...] for s in range(self.sms)], dim=2)
