@@ -103,54 +103,54 @@ class sense_grappa:
 
     #     return slc_ksp, rss
 
-def apply(self, inp_data):
-    
-    # Readout FOV of extended-FOV images is no longer centered for an even number of simultaneously excited slices. Add FOV/2 shift here
-    if self.sms % 2 == 0:
-        inp_data[:, :, 1::2, :] = inp_data[:, :, 1::2, :] * np.exp(1j * np.pi)
+    def apply(self, inp_data):
+        
+        # Readout FOV of extended-FOV images is no longer centered for an even number of simultaneously excited slices. Add FOV/2 shift here
+        if self.sms % 2 == 0:
+            inp_data[:, :, 1::2, :] = inp_data[:, :, 1::2, :] * np.exp(1j * np.pi)
 
-    # Handling matrix sizes not evenly divisible by acceleration factor
-    phase_matrix_size = inp_data.shape[3]
-    if inp_data.shape[3] % self.accel[1]:
-        # Calculate the required padding to make the size divisible by the acceleration factor
-        npad = self.accel[1] - (inp_data.shape[3] % self.accel[1])
-        z = torch.zeros((inp_data.shape[0], inp_data.shape[1], inp_data.shape[2], npad),
+        # Handling matrix sizes not evenly divisible by acceleration factor
+        phase_matrix_size = inp_data.shape[3]
+        if inp_data.shape[3] % self.accel[1]:
+            # Calculate the required padding to make the size divisible by the acceleration factor
+            npad = self.accel[1] - (inp_data.shape[3] % self.accel[1])
+            z = torch.zeros((inp_data.shape[0], inp_data.shape[1], inp_data.shape[2], npad),
+                            dtype=inp_data.dtype, device=inp_data.device)
+            inp_data = torch.cat([inp_data, z], dim=3)
+
+        # Zero-fill data
+        data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms * inp_data.shape[2], inp_data.shape[3]),
                         dtype=inp_data.dtype, device=inp_data.device)
-        inp_data = torch.cat([inp_data, z], dim=3)
+        data[:, :, ::self.sms, :] = inp_data
 
-    # Zero-fill data
-    data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms * inp_data.shape[2], inp_data.shape[3]),
-                       dtype=inp_data.dtype, device=inp_data.device)
-    data[:, :, ::self.sms, :] = inp_data
+        # Figure out number of interpolated points along each dimension
+        nr, nc = get_num_interpolated_points(data.shape, self.kernel_size, self.accel)
 
-    # Figure out number of interpolated points along each dimension
-    nr, nc = get_num_interpolated_points(data.shape, self.kernel_size, self.accel)
+        # Interpolate the missing points
+        A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
+        Y = [(A @ w).view(1, self.coils, nr, nc) for w in self.weights]
 
-    # Interpolate the missing points
-    A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
-    Y = [(A @ w).view(1, self.coils, nr, nc) for w in self.weights]
+        out = torch.zeros((1, self.coils, self.accel[0] * nr, self.accel[1] * nc),
+                        dtype=inp_data.dtype, device=inp_data.device)
+        for rfe, rpe in self.start_inds:
+            out[:, :, rfe::self.accel[0], rpe::self.accel[1]] = Y[rfe * self.accel[1] + rpe]
 
-    out = torch.zeros((1, self.coils, self.accel[0] * nr, self.accel[1] * nc),
-                      dtype=inp_data.dtype, device=inp_data.device)
-    for rfe, rpe in self.start_inds:
-        out[:, :, rfe::self.accel[0], rpe::self.accel[1]] = Y[rfe * self.accel[1] + rpe]
+        # Final interpolation
+        if self.final_matrix_size is not None:
+            adjusted_matrix_size = (self.sms * self.final_matrix_size[0], self.final_matrix_size[1])
+            out = interp_to_matrix_size(out, adjusted_matrix_size)
 
-    # Final interpolation
-    if self.final_matrix_size is not None:
-        adjusted_matrix_size = (self.sms * self.final_matrix_size[0], self.final_matrix_size[1])
-        out = interp_to_matrix_size(out, adjusted_matrix_size)
+        # Remove any extra zero padding lines that were added above
+        out = out[..., :phase_matrix_size]
 
-    # Remove any extra zero padding lines that were added above
-    out = out[..., :phase_matrix_size]
+        # Data consistency
+        out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
 
-    # Data consistency
-    out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
+        # Bring to the image domain and crop slices
+        nread = inp_data.shape[2]
+        img = ifft2d(out, dims=(2, 3))
+        img = torch.stack([img[0, :, n * nread:(n + 1) * nread, :] for n in range(self.sms)], axis=0)
+        slc_ksp = fft2d(img, dims=(2, 3))
+        rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
-    # Bring to the image domain and crop slices
-    nread = inp_data.shape[2]
-    img = ifft2d(out, dims=(2, 3))
-    img = torch.stack([img[0, :, n * nread:(n + 1) * nread, :] for n in range(self.sms)], axis=0)
-    slc_ksp = fft2d(img, dims=(2, 3))
-    rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
-
-    return slc_ksp, rss
+        return slc_ksp, rss
