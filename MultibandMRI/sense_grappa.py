@@ -73,7 +73,7 @@ class sense_grappa:
             flag = 1
             print("Data shape: ", inp_data.shape[3], "Acceleration: ", self.accel[1])
             npad = self.accel[1] - (inp_data.shape[3] % self.accel[1])
-            npad = inp_data.shape[3] % self.accel[1]
+            # npad = inp_data.shape[3] % self.accel[1] # using the old npad let to some funky results (likely do to mismatched shifting)
             print("npad: ", npad)
             front_pad = int(npad/2) # Try even padding
             back_pad = npad - front_pad # Try even padding
