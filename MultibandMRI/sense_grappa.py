@@ -66,7 +66,6 @@ class sense_grappa:
             npad = self.accel[1] - (inp_data.shape[3] % self.accel[1])
             z = torch.zeros((inp_data.shape[0],inp_data.shape[1],inp_data.shape[2],npad), dtype=inp_data.dtype, device=inp_data.device)
             inp_data = torch.cat([inp_data, z], dim=3)
-            print(inp_data.shape)
 
         # zero-fill data 
         data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms*inp_data.shape[2], inp_data.shape[3]), dtype=inp_data.dtype, device=inp_data.device)
@@ -78,16 +77,16 @@ class sense_grappa:
         # interpolate the missing points
         A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, stride=self.accel)
         Y = [(A@w).view(1, self.coils, nr, nc) for w in self.weights]
-        print("Y length: ", len(Y)) # MATCHES THE TOTAL ACCELERATION FACTOR???
 
         out = torch.zeros((1, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=inp_data.dtype, device=inp_data.device)
         for rfe, rpe in self.start_inds:
-            out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe] # WHY IS RFE * R AND NOR RPE???
+            out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
 
         # final interpolation 
         if self.final_matrix_size is not None:
             adjusted_matrix_size = (self.sms*self.final_matrix_size[0], self.final_matrix_size[1])
             out = interp_to_matrix_size(out, adjusted_matrix_size)
+            print("Interp matrix size output: ", out.shape)
 
         # remove any extra zero padding lines that were added above
         data = data[...,:phase_matrix_size]
