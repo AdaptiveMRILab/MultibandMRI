@@ -64,7 +64,7 @@ class sense_grappa:
         phase_matrix_size = inp_data.shape[3]
         if inp_data.shape[3] % self.accel[1]:
             npad = self.accel[1] - (inp_data.shape[3] % self.accel[1])
-            npad = 50 # Try something extreme to see if its even doing anything
+            npad = 20 # Try something extreme to see if its even doing anything
             z = torch.zeros((inp_data.shape[0],inp_data.shape[1],inp_data.shape[2],npad), dtype=inp_data.dtype, device=inp_data.device)
             inp_data = torch.cat([inp_data, z], dim=3)
 
