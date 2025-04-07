@@ -55,6 +55,11 @@ class sense_grappa:
             b = get_kernel_points(data, shifts=shifts, kernel_size=self.kernel_size, accel=self.accel)
             self.weights.append(AHA_inv @ (AH @ b))
     
+    # Current notes and deductions:
+    # The error has to be in the apply stage if the code works for other SMS / acceleration factors
+    # The code only malfunctions if inp_data.shape[3] % accel[1] != 0; so something with the acceleration is messing with things
+    # The accel tuple is (sms, R), whereas slice_grappa and split_slice_grappa use (1, R) as the accel tuple (in application)
+
     def apply(self, inp_data):
 
         # readout FOV of extended-FOV images is no longer centered for an even number of simultaneously excited slices. add FOV/2 shift here
@@ -69,7 +74,7 @@ class sense_grappa:
 
         # zero-fill data 
         data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms*inp_data.shape[2], inp_data.shape[3]), dtype=inp_data.dtype, device=inp_data.device)
-        data[:,:,::self.sms,:] = inp_data
+        # data[:,:,::self.sms,:] = inp_data # Try commenting out to understand purpose
         print("Data.shape:",data.shape)
 
         # figure out number of interpolated points along each dimension 
