@@ -59,6 +59,10 @@ class sense_grappa:
     # The error has to be in the apply stage if the code works for other SMS / acceleration factors
     # The code only malfunctions if inp_data.shape[3] % accel[1] != 0; so something with the acceleration is messing with things
     # The accel tuple is (sms, R), whereas slice_grappa and split_slice_grappa use (1, R) as the accel tuple (in application)
+    # get_kernel_patches and get_kernel_points both use this acceleration tuple, but I don't think they're wrong due to me thinking the calibration is done correctly
+    # interp_to_matrix_size doesn't use the acceleration and pads to the right size (it's wierd since the lines of kspace are there, but low-value, but other
+    # reconstruction functions have the lines removed in kspace (since you can't take the log of 0))
+    # get_num_interpolated_points uses the accel tuple, this could be the source of the error
 
     def apply(self, inp_data):
 
