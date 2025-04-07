@@ -37,7 +37,7 @@ class sense_grappa:
         data = fft1d(data, dim=2)
 
         # get the source data points 
-        A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel, pad=True)
+        A = get_kernel_patches(data, kernel_size=self.kernel_size, accel=self.accel)
         self.kernel_shifts, self.start_inds, self.eff_kernel_size = get_kernel_shifts(self.kernel_size, self.accel) 
 
         # l2 regularization 
