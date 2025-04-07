@@ -140,8 +140,8 @@ class sense_raki:
             adjusted_matrix_size = (self.sms*self.final_matrix_size[0], self.final_matrix_size[1])
             out = interp_to_matrix_size(out, adjusted_matrix_size)
 
-        # data consistency
-        out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
+        # # data consistency
+        # out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
 
         # bring to the image domain and crop slices
         nread = inp_data.shape[2]
