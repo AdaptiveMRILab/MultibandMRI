@@ -70,7 +70,6 @@ class sense_grappa:
         # zero-fill data 
         data = torch.zeros((inp_data.shape[0], inp_data.shape[1], self.sms*inp_data.shape[2], inp_data.shape[3]), dtype=inp_data.dtype, device=inp_data.device)
         data[:,:,::self.sms,:] = inp_data
-        print("Data.shape:",data.shape)
 
         # figure out number of interpolated points along each dimension 
         nr, nc = get_num_interpolated_points(data.shape, self.kernel_size, self.accel)
@@ -80,7 +79,6 @@ class sense_grappa:
         Y = [(A@w).view(1, self.coils, nr, nc) for w in self.weights]
 
         out = torch.zeros((1, self.coils, self.accel[0]*nr, self.accel[1]*nc), dtype=inp_data.dtype, device=inp_data.device)
-        print("Out.shape:",out.shape)
         for rfe, rpe in self.start_inds:
             out[:,:,rfe::self.accel[0],rpe::self.accel[1]] = Y[rfe*self.accel[1]+rpe]
 
