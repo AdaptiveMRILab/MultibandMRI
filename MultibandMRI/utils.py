@@ -234,6 +234,8 @@ def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4
         model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
     elif net_type == 'RES':
         model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
+    elif net_type == 'MLPb':
+        model = complex_mlp_bspline(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
 
     # set up the optimizer 
     optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
@@ -329,3 +331,60 @@ class CoilCompress:
             tmp[dataMask > 0] = mtrx[:, c]
             ccdata[:,c,...] = tmp.clone()
         return ccdata
+    
+# Code created by AI - try and get b-spline to work as a starting point
+class BSplineActivation(torch.nn.Module):
+    def __init__(self, num_ctrl_pts=8, degree=3):
+        super().__init__()
+        self.degree = degree
+        self.num_ctrl_pts = num_ctrl_pts
+        # Learnable control points
+        self.ctrl_pts = torch.nn.Parameter(torch.linspace(0, 1, num_ctrl_pts))
+        # Uniform knots
+        self.register_buffer('knots', torch.linspace(0, 1, num_ctrl_pts + degree + 1))
+
+    def forward(self, x):
+        # Normalize x to [0, 1]
+        x_norm = (x - x.min()) / (x.max() - x.min() + 1e-8)
+        # Piecewise linear interpolation as a simple B-spline approximation
+        idx = (x_norm * (self.num_ctrl_pts - 1)).long()
+        idx = torch.clamp(idx, 0, self.num_ctrl_pts - 2)
+        left = self.ctrl_pts[idx]
+        right = self.ctrl_pts[idx + 1]
+        alpha = x_norm * (self.num_ctrl_pts - 1) - idx.float()
+        return (1 - alpha) * left + alpha * right
+    
+class complex_bspline(torch.nn.Module):
+    def __init__(self, eps=1e-6, num_ctrl_pts=8, degree=3):
+        super().__init__()
+        self.eps = eps
+        self.bspline = BSplineActivation(num_ctrl_pts=num_ctrl_pts, degree=degree)
+    def forward(self, x):
+        mag = torch.abs(x)
+        activated = self.bspline(mag)
+        return activated.to(torch.complex64) / (mag + self.eps) * x
+    
+class complex_mlp_bspline(torch.nn.Module):
+    '''
+    A complex-valued multi-layer perceptron with B-spline activation
+    '''
+    def __init__(self, in_size, out_size, num_layers=4, hidden_size=64, bias=False):
+        super(complex_mlp_bspline, self).__init__()
+        self.num_layers = num_layers
+        self.layers_real = torch.nn.ModuleList()
+        self.layers_imag = torch.nn.ModuleList()
+        for n in range(num_layers):
+            ninp = in_size if n == 0 else hidden_size
+            nout = out_size if n == num_layers - 1 else hidden_size 
+            self.layers_real.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
+            self.layers_imag.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
+        self.cbspline = complex_bspline()
+
+    def forward(self, x):
+        for n in range(self.num_layers):
+            xr = self.layers_real[n](x.real) - self.layers_imag[n](x.imag)
+            xi = self.layers_real[n](x.imag) + self.layers_imag[n](x.real)
+            x = torch.complex(xr, xi) 
+            if n < self.num_layers - 1:
+                x = self.cbspline(x)
+        return x 
