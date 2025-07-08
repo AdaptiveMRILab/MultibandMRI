@@ -294,6 +294,8 @@ def load_complex_net(model_path, net_type, in_size, out_size, num_layers, hidden
         model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size)
     elif net_type == 'RES':
         model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size)
+    elif net_type == 'MLPb':
+        model = complex_mlp_bspline(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size)
     model.load_state_dict(torch.load(model_path, weights_only=True))
     return model 
 
