@@ -335,26 +335,41 @@ class CoilCompress:
         return ccdata
     
 # Code created by AI - try and get b-spline to work as a starting point
+def bspline_basis(x, knots, degree, i):
+    if degree == 0:
+        return ((x >= knots[i]) & (x < knots[i+1])).float()
+    else:
+        denom1 = knots[i+degree] - knots[i]
+        denom2 = knots[i+degree+1] - knots[i+1]
+        term1 = 0
+        term2 = 0
+        if denom1 > 0:
+            term1 = (x - knots[i]) / denom1 * bspline_basis(x, knots, degree-1, i)
+        if denom2 > 0:
+            term2 = (knots[i+degree+1] - x) / denom2 * bspline_basis(x, knots, degree-1, i+1)
+        return term1 + term2
+    
 class BSplineActivation(torch.nn.Module):
     def __init__(self, num_ctrl_pts=8, degree=3):
         super().__init__()
         self.degree = degree
         self.num_ctrl_pts = num_ctrl_pts
-        # Learnable control points
         self.ctrl_pts = torch.nn.Parameter(torch.linspace(0, 1, num_ctrl_pts))
-        # Uniform knots
-        self.register_buffer('knots', torch.linspace(0, 1, num_ctrl_pts + degree + 1))
+        # Uniform knots with padding for B-spline
+        knots = torch.linspace(0, 1, num_ctrl_pts - degree + 1)
+        knots = torch.cat([knots.new_full((degree,), knots[0]), knots, knots.new_full((degree,), knots[-1])])
+        self.register_buffer('knots', knots)
 
     def forward(self, x):
-        # Normalize x to [0, 1]
-        x_norm = (x - x.min()) / (x.max() - x.min() + 1e-8)
-        # Piecewise linear interpolation as a simple B-spline approximation
-        idx = (x_norm * (self.num_ctrl_pts - 1)).long()
-        idx = torch.clamp(idx, 0, self.num_ctrl_pts - 2)
-        left = self.ctrl_pts[idx]
-        right = self.ctrl_pts[idx + 1]
-        alpha = x_norm * (self.num_ctrl_pts - 1) - idx.float()
-        return (1 - alpha) * left + alpha * right
+        # Clamp input to [0, 1]
+        x_norm = torch.clamp(x, 0, 1)
+        # Compute B-spline basis for each control point
+        basis = []
+        for i in range(self.num_ctrl_pts):
+            basis.append(bspline_basis(x_norm, self.knots, self.degree, i))
+        basis = torch.stack(basis, dim=-1)
+        # Weighted sum of control points
+        return torch.sum(basis * self.ctrl_pts, dim=-1)
     
 class complex_bspline(torch.nn.Module):
     def __init__(self, eps=1e-6, num_ctrl_pts=8, degree=3):
