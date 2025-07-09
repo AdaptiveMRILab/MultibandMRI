@@ -373,8 +373,6 @@ class BSplineActivation(torch.nn.Module):
         # x: (...,) in [0, 1]
         # Output: (...,)
         # Evaluate B-spline basis functions at x
-        # Expand x to (..., 1) for broadcasting
-        x = x.unsqueeze(-1)  # shape (..., 1)
         basis = self.bspline_basis(x, self.degree, self.knots, self.num_ctrl_pts)
         # Weighted sum of control points
         return torch.sum(basis * self.ctrl_pts, dim=-1)
