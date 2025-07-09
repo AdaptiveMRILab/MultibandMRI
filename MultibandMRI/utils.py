@@ -382,7 +382,7 @@ class BSplineActivation(torch.nn.Module):
     def bspline_basis(self, x, degree, knots, num_ctrl_pts):
         # Cox-de Boor recursion
         device = x.device
-        x = x.to(knots.device)
+        dtype = x.dtype
         # Initialize zeroth degree basis functions
         basis = []
         for i in range(num_ctrl_pts):
@@ -396,17 +396,19 @@ class BSplineActivation(torch.nn.Module):
         for d in range(1, degree+1):
             new_basis = []
             for i in range(num_ctrl_pts):
-                # Always use tensors for left/right
-                left = torch.zeros_like(x[..., 0])
-                right = torch.zeros_like(x[..., 0])
+                # left fraction
                 left_den = knots[i+d] - knots[i]
-                if left_den > 0:
-                    left_num = x - knots[i]
+                left_num = x - knots[i]
+                left = torch.zeros_like(x[..., 0])
+                if left_den != 0:
                     left = left_num / left_den * basis[..., i]
-                right_den = knots[i+d+1] - knots[i+1]
-                if right_den > 0 and i+1 < num_ctrl_pts:
+                # right fraction
+                right = torch.zeros_like(x[..., 0])
+                if i+1 < num_ctrl_pts:
+                    right_den = knots[i+d+1] - knots[i+1]
                     right_num = knots[i+d+1] - x
-                    right = right_num / right_den * basis[..., i+1]
+                    if right_den != 0:
+                        right = right_num / right_den * basis[..., i+1]
                 new_basis.append(left + right)
             basis = torch.stack(new_basis, dim=-1)
         return basis
