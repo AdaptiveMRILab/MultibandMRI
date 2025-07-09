@@ -396,20 +396,20 @@ class BSplineActivation(torch.nn.Module):
         for d in range(1, degree+1):
             new_basis = []
             for i in range(num_ctrl_pts):
-                left_num = x - knots[i]
+                # Always use tensors for left/right
+                left = torch.zeros_like(x[..., 0])
+                right = torch.zeros_like(x[..., 0])
                 left_den = knots[i+d] - knots[i]
-                left = 0
                 if left_den > 0:
+                    left_num = x - knots[i]
                     left = left_num / left_den * basis[..., i]
-                right_num = knots[i+d+1] - x
                 right_den = knots[i+d+1] - knots[i+1]
-                right = 0
                 if right_den > 0 and i+1 < num_ctrl_pts:
+                    right_num = knots[i+d+1] - x
                     right = right_num / right_den * basis[..., i+1]
                 new_basis.append(left + right)
             basis = torch.stack(new_basis, dim=-1)
         return basis
-
     
 class complex_bspline(torch.nn.Module):
     def __init__(self, eps=1e-6, num_ctrl_pts=8, degree=3):
