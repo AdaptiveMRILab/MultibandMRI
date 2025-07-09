@@ -389,7 +389,6 @@ class BSplineActivation(torch.nn.Module):
         basis = []
         for i in range(num_ctrl_pts):
             cond = (x >= knots[i]) & (x < knots[i+1])
-            # Special case for the last knot
             if i == num_ctrl_pts - 1:
                 cond = (x >= knots[i]) & (x <= knots[i+1])
             basis.append(cond.float())
@@ -398,13 +397,11 @@ class BSplineActivation(torch.nn.Module):
         for d in range(1, degree+1):
             new_basis = []
             for i in range(num_ctrl_pts):
-                # left fraction
                 left = torch.zeros_like(basis[..., i])
                 left_den = knots[i+d] - knots[i]
                 if left_den != 0:
                     left_num = x.squeeze(-1) - knots[i]
                     left = (left_num / left_den) * basis[..., i]
-                # right fraction
                 right = torch.zeros_like(basis[..., i])
                 if i+1 < num_ctrl_pts:
                     right_den = knots[i+d+1] - knots[i+1]
