@@ -417,8 +417,9 @@ class BSplineActivation(torch.nn.Module):
         self.register_buffer('knots', torch.linspace(0, 1, num_ctrl_pts + degree + 1))
 
     def forward(self, x):
-        # Normalize x to [0, 1]
-        x_norm = (x - x.min()) / (x.max() - x.min() + 1e-8)
+        # # Normalize x to [0, 1]
+        # x_norm = (x - x.min()) / (x.max() - x.min() + 1e-8)
+        x_norm = x
         # Piecewise linear interpolation as a simple B-spline approximation
         idx = (x_norm * (self.num_ctrl_pts - 1)).long()
         idx = torch.clamp(idx, 0, self.num_ctrl_pts - 2)
