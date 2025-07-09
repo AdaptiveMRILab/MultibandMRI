@@ -427,7 +427,7 @@ class BSplineActivation(torch.nn.Module):
         alpha = x_norm * (self.num_ctrl_pts - 1) - idx.float()
         return (1 - alpha) * left + alpha * right
     
-class complex_mlp_bspline(torch.nn.Module):
+class complex_bspline(torch.nn.Module):
     def __init__(self, eps=1e-6, num_ctrl_pts=8, degree=3):
         super().__init__()
         self.eps = eps
@@ -436,3 +436,28 @@ class complex_mlp_bspline(torch.nn.Module):
         mag = torch.abs(x)
         activated = self.bspline(mag)
         return activated.to(torch.complex64) / (mag + self.eps) * x
+    
+class complex_mlp_bspline(torch.nn.Module):
+    '''
+    A complex-valued multi-layer perceptron with B-spline activation
+    '''
+    def __init__(self, in_size, out_size, num_layers=4, hidden_size=64, bias=False):
+        super(complex_mlp_bspline, self).__init__()
+        self.num_layers = num_layers
+        self.layers_real = torch.nn.ModuleList()
+        self.layers_imag = torch.nn.ModuleList()
+        for n in range(num_layers):
+            ninp = in_size if n == 0 else hidden_size
+            nout = out_size if n == num_layers - 1 else hidden_size 
+            self.layers_real.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
+            self.layers_imag.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
+        self.cbspline = complex_bspline()
+
+    def forward(self, x):
+        for n in range(self.num_layers):
+            xr = self.layers_real[n](x.real) - self.layers_imag[n](x.imag)
+            xi = self.layers_real[n](x.imag) + self.layers_imag[n](x.real)
+            x = torch.complex(xr, xi) 
+            if n < self.num_layers - 1:
+                x = self.cbspline(x)
+        return x
