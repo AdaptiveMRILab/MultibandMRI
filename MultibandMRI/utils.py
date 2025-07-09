@@ -427,7 +427,7 @@ class BSplineActivation(torch.nn.Module):
         alpha = x_norm * (self.num_ctrl_pts - 1) - idx.float()
         return (1 - alpha) * left + alpha * right
     
-class complex_bspline(torch.nn.Module):
+class complex_mlp_bspline(torch.nn.Module):
     def __init__(self, eps=1e-6, num_ctrl_pts=8, degree=3):
         super().__init__()
         self.eps = eps
