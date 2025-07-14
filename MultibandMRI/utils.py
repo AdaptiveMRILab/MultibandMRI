@@ -373,7 +373,7 @@ class BSplineActivation(torch.nn.Module):
         # x: (batch_size, layer_size)
         # returns: (batch_size, layer_size)
 
-        print(max(x))
+        print(x)
 
         # Evaluate B-spline basis functions at x
         basis = self.bspline_basis(x, self.degree, self.knots, self.num_ctrl_pts)
