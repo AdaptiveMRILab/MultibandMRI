@@ -337,84 +337,84 @@ class CoilCompress:
 # Code created by AI - try and get b-spline to work as a starting point
 
 # # Linear activation function created by AI (works fine)
-# class BSplineActivation(torch.nn.Module):
-#     def __init__(self, num_ctrl_pts=8, degree=3):
-#         super().__init__()
-#         self.degree = degree
-#         self.num_ctrl_pts = num_ctrl_pts
-#         # Learnable control points
-#         self.ctrl_pts = torch.nn.Parameter(torch.linspace(0, 1, num_ctrl_pts))
-#         # Uniform knots
-#         self.register_buffer('knots', torch.linspace(0, 1, num_ctrl_pts + degree + 1))
-
-#     def forward(self, x):
-#         # Piecewise linear interpolation as a simple B-spline approximation
-#         idx = (x * (self.num_ctrl_pts - 1)).long()
-#         idx = torch.clamp(idx, 0, self.num_ctrl_pts - 2)
-#         left = self.ctrl_pts[idx]
-#         right = self.ctrl_pts[idx + 1]
-#         alpha = x * (self.num_ctrl_pts - 1) - idx.float()
-#         return (1 - alpha) * left + alpha * right
-
 class BSplineActivation(torch.nn.Module):
-    # degree = 3
-    def __init__(self, num_ctrl_pts=8, degree=1):
+    def __init__(self, num_ctrl_pts=8, degree=3):
         super().__init__()
         self.degree = degree
         self.num_ctrl_pts = num_ctrl_pts
-
         # Learnable control points
         self.ctrl_pts = torch.nn.Parameter(torch.linspace(0, 1, num_ctrl_pts))
-
-        # Uniform knots (open uniform B-spline)
-        knots = torch.linspace(0, 1, num_ctrl_pts - degree + 1)
-        start = knots[0].repeat(degree)
-        end = knots[-1].repeat(degree)
-        self.register_buffer('knots', torch.cat([start, knots, end]))
+        # Uniform knots
+        self.register_buffer('knots', torch.linspace(0, 1, num_ctrl_pts + degree + 1))
 
     def forward(self, x):
-        # x: (batch_size, layer_size)
-        # returns: (batch_size, layer_size)
+        # Piecewise linear interpolation as a simple B-spline approximation
+        idx = (x * (self.num_ctrl_pts - 1)).long()
+        idx = torch.clamp(idx, 0, self.num_ctrl_pts - 2)
+        left = self.ctrl_pts[idx]
+        right = self.ctrl_pts[idx + 1]
+        alpha = x * (self.num_ctrl_pts - 1) - idx.float()
+        return (1 - alpha) * left + alpha * right
 
-        # Evaluate B-spline basis functions at x
-        basis = self.bspline_basis(x, self.degree, self.knots, self.num_ctrl_pts)
+# class BSplineActivation(torch.nn.Module):
+#     # degree = 3
+#     def __init__(self, num_ctrl_pts=8, degree=1):
+#         super().__init__()
+#         self.degree = degree
+#         self.num_ctrl_pts = num_ctrl_pts
 
-        # Weighted sum of control points
-        return torch.sum(basis * self.ctrl_pts, dim=-1)
+#         # Learnable control points
+#         self.ctrl_pts = torch.nn.Parameter(torch.linspace(0, 1, num_ctrl_pts))
 
-    def bspline_basis(self, x, degree, knots, num_ctrl_pts):
-        # x: (batch_size, layer_size)
-        # knots: (batch_size, layer_size)
-        # returns: (batch_size, layer_size, num_ctrl_pts)
+#         # Uniform knots (open uniform B-spline)
+#         knots = torch.linspace(0, 1, num_ctrl_pts - degree + 1)
+#         start = knots[0].repeat(degree)
+#         end = knots[-1].repeat(degree)
+#         self.register_buffer('knots', torch.cat([start, knots, end]))
 
-        # Initialize zeroth degree basis functions
-        basis = []
-        for i in range(num_ctrl_pts):
-            cond = (x >= knots[i]) & (x < knots[i+1])
-            if i == num_ctrl_pts - 1:
-                cond = (x >= knots[i]) & (x <= knots[i+1])
-            basis.append(cond.float())
-        basis = torch.stack(basis, dim=-1)
+#     def forward(self, x):
+#         # x: (batch_size, layer_size)
+#         # returns: (batch_size, layer_size)
 
-        # Loops through the degrees (each loop adds a degree)
-        for d in range(1, degree+1):
-            new_basis = []
-            for i in range(num_ctrl_pts):
-                left = torch.zeros_like(basis[..., i])
-                left_den = knots[i+d] - knots[i]
-                if left_den != 0:
-                    left_num = x.squeeze(-1) - knots[i]
-                    left = (left_num / left_den) * basis[..., i]
-                right = torch.zeros_like(basis[..., i])
-                if i+1 < num_ctrl_pts:
-                    right_den = knots[i+d+1] - knots[i+1]
-                    if right_den != 0:
-                        right_num = knots[i+d+1] - x.squeeze(-1)
-                        right = (right_num / right_den) * basis[..., i+1]
-                new_basis.append(left + right)
-            basis = torch.stack(new_basis, dim=-1)
+#         # Evaluate B-spline basis functions at x
+#         basis = self.bspline_basis(x, self.degree, self.knots, self.num_ctrl_pts)
 
-        return basis
+#         # Weighted sum of control points
+#         return torch.sum(basis * self.ctrl_pts, dim=-1)
+
+    # def bspline_basis(self, x, degree, knots, num_ctrl_pts):
+    #     # x: (batch_size, layer_size)
+    #     # knots: (batch_size, layer_size)
+    #     # returns: (batch_size, layer_size, num_ctrl_pts)
+
+    #     # Initialize zeroth degree basis functions
+    #     basis = []
+    #     for i in range(num_ctrl_pts):
+    #         cond = (x >= knots[i]) & (x < knots[i+1])
+    #         if i == num_ctrl_pts - 1:
+    #             cond = (x >= knots[i]) & (x <= knots[i+1])
+    #         basis.append(cond.float())
+    #     basis = torch.stack(basis, dim=-1)
+
+    #     # Loops through the degrees (each loop adds a degree)
+    #     for d in range(1, degree+1):
+    #         new_basis = []
+    #         for i in range(num_ctrl_pts):
+    #             left = torch.zeros_like(basis[..., i])
+    #             left_den = knots[i+d] - knots[i]
+    #             if left_den != 0:
+    #                 left_num = x.squeeze(-1) - knots[i]
+    #                 left = (left_num / left_den) * basis[..., i]
+    #             right = torch.zeros_like(basis[..., i])
+    #             if i+1 < num_ctrl_pts:
+    #                 right_den = knots[i+d+1] - knots[i+1]
+    #                 if right_den != 0:
+    #                     right_num = knots[i+d+1] - x.squeeze(-1)
+    #                     right = (right_num / right_den) * basis[..., i+1]
+    #             new_basis.append(left + right)
+    #         basis = torch.stack(new_basis, dim=-1)
+
+    #     return basis
     
 class complex_bspline(torch.nn.Module):
     # degree = 3
