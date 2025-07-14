@@ -349,13 +349,12 @@ class BSplineActivation(torch.nn.Module):
 
     def forward(self, x):
         # Piecewise linear interpolation as a simple B-spline approximation
-        print("Forward x: ", x.shape)
-        print("Forward x: ", x.dtype)
         idx = (x * (self.num_ctrl_pts - 1)).long()
         idx = torch.clamp(idx, 0, self.num_ctrl_pts - 2)
         left = self.ctrl_pts[idx]
         right = self.ctrl_pts[idx + 1]
         alpha = x * (self.num_ctrl_pts - 1) - idx.float()
+        print(alpha.shape)
         return (1 - alpha) * left + alpha * right
 
 # class BSplineActivation(torch.nn.Module):
