@@ -364,7 +364,7 @@ def normalize_input(x, eps=1e-9):
 
 class BSplineActivation(torch.nn.Module):
     # From before: degree = 3
-    def __init__(self, num_ctrl_pts=8, degree=1):
+    def __init__(self, num_ctrl_pts=8, degree=3):
         super().__init__()
         self.degree = degree
         self.num_ctrl_pts = num_ctrl_pts
@@ -429,7 +429,7 @@ class BSplineActivation(torch.nn.Module):
     
 class complex_bspline(torch.nn.Module):
     # From before: degree = 3
-    def __init__(self, eps=1e-6, num_ctrl_pts=8, degree=1):
+    def __init__(self, eps=1e-6, num_ctrl_pts=8, degree=3):
         super(complex_bspline, self).__init__()
         self.eps = eps
         self.bspline = BSplineActivation(num_ctrl_pts=num_ctrl_pts, degree=degree)
