@@ -361,8 +361,10 @@ class BSplineActivation(torch.nn.Module):
         super().__init__()
         self.degree = degree
         self.num_ctrl_pts = num_ctrl_pts
+
         # Learnable control points
         self.ctrl_pts = torch.nn.Parameter(torch.linspace(0, 1, num_ctrl_pts))
+
         # Uniform knots (open uniform B-spline)
         knots = torch.linspace(0, 1, num_ctrl_pts - degree + 1)
         start = knots[0].repeat(degree)
@@ -371,14 +373,12 @@ class BSplineActivation(torch.nn.Module):
 
     def forward(self, x):
         # x: (..., layer_size)
+        # returns: (..., layer_size)
+
         # Evaluate B-spline basis functions at x
-        print('Forward BSpline x: ', x.shape)
-        print('Forward BSpline x: ', x.dtype)
         basis = self.bspline_basis(x, self.degree, self.knots, self.num_ctrl_pts)
-        print('Forward Basis: ', basis.shape)
-        print('Forward Basis: ', basis.dtype)
+
         # Weighted sum of control points
-        print((torch.sum(basis * self.ctrl_pts, dim=-1)).shape)
         return torch.sum(basis * self.ctrl_pts, dim=-1)
 
     def bspline_basis(self, x, degree, knots, num_ctrl_pts):
@@ -386,6 +386,8 @@ class BSplineActivation(torch.nn.Module):
         # knots: (num_ctrl_pts + degree + 1,)
         # Returns: (..., num_ctrl_pts)
         # Initialize zeroth degree basis functions
+        print("bspline_basis x: ", x.shape)
+        print("bspline_basis knots: ", x.shape)
         basis = []
         for i in range(num_ctrl_pts):
             cond = (x >= knots[i]) & (x < knots[i+1])
@@ -393,6 +395,7 @@ class BSplineActivation(torch.nn.Module):
                 cond = (x >= knots[i]) & (x <= knots[i+1])
             basis.append(cond.float())
         basis = torch.stack(basis, dim=-1)  # shape (..., num_ctrl_pts)
+        print("bspline_basis basis1: ", basis.shape)
 
         for d in range(1, degree+1):
             new_basis = []
@@ -410,6 +413,9 @@ class BSplineActivation(torch.nn.Module):
                         right = (right_num / right_den) * basis[..., i+1]
                 new_basis.append(left + right)
             basis = torch.stack(new_basis, dim=-1)
+            print("bspline_basis basis2: ", basis.shape)
+        
+        print("bspline_basis basisFINAL: ", basis.shape)
         return basis
     
 class complex_bspline(torch.nn.Module):
