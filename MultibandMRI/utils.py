@@ -372,8 +372,8 @@ class BSplineActivation(torch.nn.Module):
         self.register_buffer('knots', torch.cat([start, knots, end]))
 
     def forward(self, x):
-        # x: (..., layer_size)
-        # returns: (..., layer_size)
+        # x: (batch_size, layer_size)
+        # returns: (batch_size, layer_size)
 
         # Evaluate B-spline basis functions at x
         basis = self.bspline_basis(x, self.degree, self.knots, self.num_ctrl_pts)
@@ -382,9 +382,9 @@ class BSplineActivation(torch.nn.Module):
         return torch.sum(basis * self.ctrl_pts, dim=-1)
 
     def bspline_basis(self, x, degree, knots, num_ctrl_pts):
-        # x: (..., layer_size)
-        # knots: (..., layer_size)
-        # returns: (..., layer_size, num_ctrl_pts)
+        # x: (batch_size, layer_size)
+        # knots: (batch_size, layer_size)
+        # returns: (batch_size, layer_size, num_ctrl_pts)
 
         # Initialize zeroth degree basis functions
         basis = []
@@ -416,7 +416,8 @@ class BSplineActivation(torch.nn.Module):
         return basis
     
 class complex_bspline(torch.nn.Module):
-    def __init__(self, eps=1e-6, num_ctrl_pts=8, degree=3):
+    # degree = 3
+    def __init__(self, eps=1e-6, num_ctrl_pts=8, degree=1):
         super(complex_bspline, self).__init__()
         self.eps = eps
         self.bspline = BSplineActivation(num_ctrl_pts=num_ctrl_pts, degree=degree)
