@@ -357,7 +357,8 @@ class CoilCompress:
 #         return (1 - alpha) * left + alpha * right
 
 class BSplineActivation(torch.nn.Module):
-    def __init__(self, num_ctrl_pts=8, degree=3):
+    # degree = 3
+    def __init__(self, num_ctrl_pts=8, degree=1):
         super().__init__()
         self.degree = degree
         self.num_ctrl_pts = num_ctrl_pts
