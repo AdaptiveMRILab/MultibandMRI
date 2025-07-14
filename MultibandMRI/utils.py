@@ -357,7 +357,7 @@ class CoilCompress:
 #         return (1 - alpha) * left + alpha * right
 
 class BSplineActivation(torch.nn.Module):
-    # degree = 3
+    # From before: degree = 3
     def __init__(self, num_ctrl_pts=8, degree=1):
         super().__init__()
         self.degree = degree
@@ -367,12 +367,13 @@ class BSplineActivation(torch.nn.Module):
         self.ctrl_pts = torch.nn.Parameter(torch.linspace(0, 1, num_ctrl_pts))
 
         # Uniform knots (open uniform B-spline)
-        self.register_buffer('knots', torch.linspace(0, 1, self.num_ctrl_pts + self.degree + 1))
-
+        self.register_buffer('knots', torch.linspace(0, 1, num_ctrl_pts + degree + 1))
 
     def forward(self, x):
         # x: (batch_size, layer_size)
         # returns: (batch_size, layer_size)
+
+        print(max(x))
 
         # Evaluate B-spline basis functions at x
         basis = self.bspline_basis(x, self.degree, self.knots, self.num_ctrl_pts)
@@ -415,7 +416,7 @@ class BSplineActivation(torch.nn.Module):
         return basis
     
 class complex_bspline(torch.nn.Module):
-    # degree = 3
+    # From before: degree = 3
     def __init__(self, eps=1e-6, num_ctrl_pts=8, degree=1):
         super(complex_bspline, self).__init__()
         self.eps = eps
