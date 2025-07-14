@@ -356,6 +356,12 @@ class CoilCompress:
 #         alpha = x * (self.num_ctrl_pts - 1) - idx.float()
 #         return (1 - alpha) * left + alpha * right
 
+def normalize_input(x, eps=1e-9):
+    x_min = x.min(dim=-1, keepdim=True)[0]
+    x_max = x.max(dim=-1, keepdim=True)[0]
+    x_norm = (x - x_min) / (x_max - x_min + eps)
+    return x_norm
+
 class BSplineActivation(torch.nn.Module):
     # From before: degree = 3
     def __init__(self, num_ctrl_pts=8, degree=1):
@@ -373,10 +379,11 @@ class BSplineActivation(torch.nn.Module):
         # x: (batch_size, layer_size)
         # returns: (batch_size, layer_size)
 
-        print(x)
+        # Normalize the input
+        x_norm = normalize_input(x)
 
         # Evaluate B-spline basis functions at x
-        basis = self.bspline_basis(x, self.degree, self.knots, self.num_ctrl_pts)
+        basis = self.bspline_basis(x_norm, self.degree, self.knots, self.num_ctrl_pts)
 
         # Weighted sum of control points
         return torch.sum(basis * self.ctrl_pts, dim=-1)
