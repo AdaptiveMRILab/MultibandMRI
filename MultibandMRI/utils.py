@@ -360,7 +360,7 @@ def normalize_input(x, eps=1e-9):
     x_min = x.min(dim=-1, keepdim=True)[0]
     x_max = x.max(dim=-1, keepdim=True)[0]
     x_norm = (x - x_min) / (x_max - x_min + eps)
-    return x_norm
+    return x_norm, x_min, x_max, eps
 
 class BSplineActivation(torch.nn.Module):
     # From before: degree = 3
@@ -380,13 +380,18 @@ class BSplineActivation(torch.nn.Module):
         # returns: (batch_size, layer_size)
 
         # Normalize the input
-        x_norm = normalize_input(x)
+        x_norm, x_min, x_max, eps = normalize_input(x)
 
         # Evaluate B-spline basis functions at x
         basis = self.bspline_basis(x_norm, self.degree, self.knots, self.num_ctrl_pts)
 
         # Weighted sum of control points
-        return torch.sum(basis * self.ctrl_pts, dim=-1)
+        output = torch.sum(basis * self.ctrl_pts, dim=-1)
+        
+        # Undo the normalization
+        output = output * (x_max-x_min+eps) + x_min
+
+        return output
 
     def bspline_basis(self, x, degree, knots, num_ctrl_pts):
         # x: (batch_size, layer_size)
