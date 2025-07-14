@@ -382,21 +382,20 @@ class BSplineActivation(torch.nn.Module):
         return torch.sum(basis * self.ctrl_pts, dim=-1)
 
     def bspline_basis(self, x, degree, knots, num_ctrl_pts):
-        # x: (..., 1)
-        # knots: (num_ctrl_pts + degree + 1,)
-        # Returns: (..., num_ctrl_pts)
+        # x: (..., layer_size)
+        # knots: (..., layer_size)
+        # returns: (..., layer_size, num_ctrl_pts)
+
         # Initialize zeroth degree basis functions
-        print("bspline_basis x: ", x.shape)
-        print("bspline_basis knots: ", x.shape)
         basis = []
         for i in range(num_ctrl_pts):
             cond = (x >= knots[i]) & (x < knots[i+1])
             if i == num_ctrl_pts - 1:
                 cond = (x >= knots[i]) & (x <= knots[i+1])
             basis.append(cond.float())
-        basis = torch.stack(basis, dim=-1)  # shape (..., num_ctrl_pts)
-        print("bspline_basis basis1: ", basis.shape)
+        basis = torch.stack(basis, dim=-1)
 
+        # Loops through the degrees (each loop adds a degree)
         for d in range(1, degree+1):
             new_basis = []
             for i in range(num_ctrl_pts):
@@ -413,9 +412,7 @@ class BSplineActivation(torch.nn.Module):
                         right = (right_num / right_den) * basis[..., i+1]
                 new_basis.append(left + right)
             basis = torch.stack(new_basis, dim=-1)
-            print("bspline_basis basis2: ", basis.shape)
-        
-        print("bspline_basis basisFINAL: ", basis.shape)
+
         return basis
     
 class complex_bspline(torch.nn.Module):
