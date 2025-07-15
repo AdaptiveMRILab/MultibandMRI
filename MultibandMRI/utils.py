@@ -101,18 +101,45 @@ def get_num_interpolated_points(shp: Tuple,
 class complex_relu(torch.nn.Module):
     def __init__(self, eps=1e-6):
         super(complex_relu, self).__init__()
+        print("Test CRELU")
         self.eps = eps
     def forward(self, x):
         mag = torch.abs(x)
         return torch.nn.functional.relu(mag).to(torch.complex64)/(mag+self.eps)*x
-    
+
+# class complex_mlp_bspline(torch.nn.Module):
+#     '''
+#     A complex-valued multi-layer perceptron with B-spline activation
+#     '''
+#     def __init__(self, in_size, out_size, num_layers=3, hidden_size=64, bias=False):
+#         super(complex_mlp_bspline, self).__init__()
+#         self.num_layers = num_layers
+#         self.layers_real = torch.nn.ModuleList()
+#         self.layers_imag = torch.nn.ModuleList()
+#         for n in range(num_layers):
+#             ninp = in_size if n == 0 else hidden_size
+#             nout = out_size if n == num_layers - 1 else hidden_size 
+#             self.layers_real.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
+#             self.layers_imag.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
+#         self.cbspline = complex_bspline()
+
+#     def forward(self, x):
+#         for n in range(self.num_layers):
+#             xr = self.layers_real[n](x.real) - self.layers_imag[n](x.imag)
+#             xi = self.layers_real[n](x.imag) + self.layers_imag[n](x.real)
+#             x = torch.complex(xr, xi) 
+#             if n < self.num_layers - 1:
+#                 x = self.cbspline(x)
+#         return x
+
 class complex_mlp(torch.nn.Module):
     '''
     A complex-valued multi-layer perceptron
     '''
-    def __init__(self, in_size, out_size, num_layers=4, hidden_size=64, bias=False):
+    def __init__(self, in_size, out_size, num_layers=4, hidden_size=64, bias=False, do_crelu=True):
         super(complex_mlp, self).__init__()
         self.num_layers = num_layers
+        self.do_crelu = do_crelu
         self.layers_real = torch.nn.ModuleList()
         self.layers_imag = torch.nn.ModuleList()
         for n in range(num_layers):
@@ -120,7 +147,11 @@ class complex_mlp(torch.nn.Module):
             nout = out_size if n == num_layers - 1 else hidden_size 
             self.layers_real.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
             self.layers_imag.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
-        self.crelu = complex_relu()
+
+        if do_crelu:
+            self.crelu = complex_relu()
+        else:
+            self.cbspline = complex_bspline()
 
     def forward(self, x):
         for n in range(self.num_layers):
@@ -128,7 +159,13 @@ class complex_mlp(torch.nn.Module):
             xi = self.layers_real[n](x.imag) + self.layers_imag[n](x.real)
             x = torch.complex(xr, xi) 
             if n < self.num_layers - 1:
-                x = self.crelu(x)
+                if self.do_crelu:
+                    x = self.crelu(x)
+                    print("Doing crelu")
+                else:
+                    x = self.cbspline(x)
+                    print("Doing cbspline")
+
         return x 
     
 class complex_resnet_block(torch.nn.Module):
@@ -250,11 +287,11 @@ def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4
     in_size = X.shape[1]
     out_size = Y.shape[1]
     if net_type == 'MLP':
-        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
+        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias, do_crelu=True).to(X.device) 
     elif net_type == 'RES':
         model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, bias=bias, do_crelu=True).to(X.device) 
     elif net_type == 'MLPb':
-        model = complex_mlp_bspline(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
+        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias, do_crelu=False).to(X.device) 
     elif net_type == 'RESb':
         model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, bias=bias, do_crelu=False).to(X.device)  
 
@@ -312,11 +349,11 @@ def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4
 def load_complex_net(model_path, net_type, in_size, out_size, num_layers, hidden_size):
     # model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size)
     if net_type == 'MLP':
-        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size)
+        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, do_crelu=True)
     elif net_type == 'RES':
         model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, do_crelu=True)
     elif net_type == 'MLPb':
-        model = complex_mlp_bspline(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size)
+        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, do_crelu=False)
     elif net_type == 'RESb':
         model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, do_crelu=False)
     model.load_state_dict(torch.load(model_path, weights_only=True))
@@ -364,8 +401,6 @@ def normalize_input(x, eps=1e-9):
     return x_norm, x_min, x_max, eps
 
 class BSplineActivation(torch.nn.Module):
-    # Default degree = 3
-    # Default num_ctrl_pts = 8
     def __init__(self, num_ctrl_pts=8, degree=3):
         super().__init__()
         self.degree = degree
@@ -435,41 +470,40 @@ class BSplineActivation(torch.nn.Module):
         return basis
     
 class complex_bspline(torch.nn.Module):
-    # Default degree = 3
-    # Default num_ctrl_pts = 8
     def __init__(self, eps=1e-6, num_ctrl_pts=8, degree=3):
         super(complex_bspline, self).__init__()
         self.eps = eps
         self.bspline = BSplineActivation(num_ctrl_pts=num_ctrl_pts, degree=degree)
+        print("TEST CBSPLINE")
     def forward(self, x):
         mag = torch.abs(x)
         activated = self.bspline(mag)
         return activated.to(torch.complex64) / (mag + self.eps) * x
     
-class complex_mlp_bspline(torch.nn.Module):
-    '''
-    A complex-valued multi-layer perceptron with B-spline activation
-    '''
-    def __init__(self, in_size, out_size, num_layers=3, hidden_size=64, bias=False):
-        super(complex_mlp_bspline, self).__init__()
-        self.num_layers = num_layers
-        self.layers_real = torch.nn.ModuleList()
-        self.layers_imag = torch.nn.ModuleList()
-        for n in range(num_layers):
-            ninp = in_size if n == 0 else hidden_size
-            nout = out_size if n == num_layers - 1 else hidden_size 
-            self.layers_real.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
-            self.layers_imag.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
-        self.cbspline = complex_bspline()
+# class complex_mlp_bspline(torch.nn.Module):
+#     '''
+#     A complex-valued multi-layer perceptron with B-spline activation
+#     '''
+#     def __init__(self, in_size, out_size, num_layers=3, hidden_size=64, bias=False):
+#         super(complex_mlp_bspline, self).__init__()
+#         self.num_layers = num_layers
+#         self.layers_real = torch.nn.ModuleList()
+#         self.layers_imag = torch.nn.ModuleList()
+#         for n in range(num_layers):
+#             ninp = in_size if n == 0 else hidden_size
+#             nout = out_size if n == num_layers - 1 else hidden_size 
+#             self.layers_real.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
+#             self.layers_imag.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
+#         self.cbspline = complex_bspline()
 
-    def forward(self, x):
-        for n in range(self.num_layers):
-            xr = self.layers_real[n](x.real) - self.layers_imag[n](x.imag)
-            xi = self.layers_real[n](x.imag) + self.layers_imag[n](x.real)
-            x = torch.complex(xr, xi) 
-            if n < self.num_layers - 1:
-                x = self.cbspline(x)
-        return x
+#     def forward(self, x):
+#         for n in range(self.num_layers):
+#             xr = self.layers_real[n](x.real) - self.layers_imag[n](x.imag)
+#             xi = self.layers_real[n](x.imag) + self.layers_imag[n](x.real)
+#             x = torch.complex(xr, xi) 
+#             if n < self.num_layers - 1:
+#                 x = self.cbspline(x)
+#         return x
     
 # class complex_resnet_block_bspline(torch.nn.Module):
 #     def __init__(self, in_size, out_size, bias=False):
