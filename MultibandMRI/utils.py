@@ -454,7 +454,7 @@ class complex_mlp_bspline(torch.nn.Module):
             nout = out_size if n == num_layers - 1 else hidden_size 
             self.layers_real.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
             self.layers_imag.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
-        self.cbspline = complex_bspline()
+            self.cbspline = complex_bspline()
 
     def forward(self, x):
         for n in range(self.num_layers):
