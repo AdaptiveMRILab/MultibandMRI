@@ -371,7 +371,8 @@ class BSplineActivation(torch.nn.Module):
         self.num_ctrl_pts = num_ctrl_pts
 
         # Learnable control points
-        self.ctrl_pts = torch.nn.Parameter(torch.linspace(0, 1, num_ctrl_pts))
+        self.ctrl_pts = torch.nn.Parameter(torch.zeros(num_ctrl_pts))
+        # self.ctrl_pts = torch.nn.Parameter(torch.linspace(0, 1, num_ctrl_pts))
 
         # Uniform knots (open uniform B-spline)
         self.register_buffer('knots', torch.linspace(0, 1, num_ctrl_pts + degree + 1))
