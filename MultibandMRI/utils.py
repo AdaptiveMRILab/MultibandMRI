@@ -209,8 +209,10 @@ class complex_resnet(torch.nn.Module):
         x = torch.complex(xr, xi) 
         if self.do_crelu:
             x = self.crelu(x)
+            print('Doing cReLU')
         else:
             x = self.cbspline(x)
+            print('Doing cb-spline')
 
         for n in range(self.num_blocks):
             x = self.blocks[n](x)
@@ -431,6 +433,7 @@ class BSplineActivation(torch.nn.Module):
                         right = (right_num / right_den) * basis[..., i+1]
                 new_basis.append(left + right)
             basis = torch.stack(new_basis, dim=-1)
+        print('TEST')
 
         return basis
     
