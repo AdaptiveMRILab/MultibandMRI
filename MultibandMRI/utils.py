@@ -236,6 +236,8 @@ def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4
         model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
     elif net_type == 'MLPb':
         model = complex_mlp_bspline(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
+    elif net_type == 'RESb':
+        model = complex_resnet_bspline(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, bias=bias).to(X.device)  
 
     # set up the optimizer 
     optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
