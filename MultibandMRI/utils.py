@@ -296,6 +296,8 @@ def load_complex_net(model_path, net_type, in_size, out_size, num_layers, hidden
         model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size)
     elif net_type == 'MLPb':
         model = complex_mlp_bspline(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size)
+    elif net_type == 'RESb':
+        model = complex_resnet_bspline(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size)
     model.load_state_dict(torch.load(model_path, weights_only=True))
     return model 
 
@@ -448,3 +450,72 @@ class complex_mlp_bspline(torch.nn.Module):
                 x = self.cbspline(x)
         return x
     
+class complex_resnet_block_bspline(torch.nn.Module):
+    def __init__(self, in_size, out_size, bias=False):
+        super(complex_resnet_block_bspline, self).__init__()
+
+        self.layer1_real = torch.nn.Linear(in_features=in_size, out_features=out_size, bias=bias)
+        self.layer1_imag = torch.nn.Linear(in_features=in_size, out_features=out_size, bias=bias)
+
+        self.layer2_real = torch.nn.Linear(in_features=out_size, out_features=out_size, bias=bias)
+        self.layer2_imag = torch.nn.Linear(in_features=out_size, out_features=out_size, bias=bias)
+
+        self.layer3_real = torch.nn.Linear(in_features=out_size, out_features=out_size, bias=bias)
+        self.layer3_imag = torch.nn.Linear(in_features=out_size, out_features=out_size, bias=bias)
+
+        self.cbspline = complex_bspline()
+
+    def forward(self, x):
+
+        x0 = x.clone()
+        
+        xr = self.layer1_real(x.real) - self.layer1_imag(x.imag)
+        xi = self.layer1_real(x.imag) + self.layer1_imag(x.real)
+        x = torch.complex(xr, xi) 
+        x = self.cbspline(x)
+
+        xr = self.layer2_real(x.real) - self.layer2_imag(x.imag)
+        xi = self.layer2_real(x.imag) + self.layer2_imag(x.real)
+        x = torch.complex(xr, xi) 
+        x = self.cbspline(x)
+
+        xr = self.layer3_real(x.real) - self.layer3_imag(x.imag)
+        xi = self.layer3_real(x.imag) + self.layer3_imag(x.real)
+        x = torch.complex(xr, xi) 
+
+        x = self.cbspline(x + x0)
+
+        return x 
+    
+class complex_resnet_bspline(torch.nn.Module):
+    def __init__(self, in_size, out_size, num_blocks=3, hidden_size=64, bias=False):
+        super(complex_resnet_bspline, self).__init__()
+        self.num_blocks = num_blocks
+
+        self.cbspline = complex_bspline()
+        
+        self.linear1_real = torch.nn.Linear(in_features=in_size, out_features=hidden_size, bias=bias)
+        self.linear1_imag = torch.nn.Linear(in_features=in_size, out_features=hidden_size, bias=bias)
+
+        self.blocks = torch.nn.ModuleList()
+        for n in range(self.num_blocks):
+            self.blocks.append(complex_resnet_block_bspline(hidden_size, hidden_size, bias=bias))
+
+        self.linear2_real = torch.nn.Linear(in_features=hidden_size, out_features=out_size, bias=bias)
+        self.linear2_imag = torch.nn.Linear(in_features=hidden_size, out_features=out_size, bias=bias)
+
+    def forward(self, x):
+
+        xr = self.linear1_real(x.real) - self.linear1_imag(x.imag)
+        xi = self.linear1_real(x.imag) + self.linear1_imag(x.real)
+        x = torch.complex(xr, xi) 
+        x = self.cbspline(x)
+
+        for n in range(self.num_blocks):
+            x = self.blocks[n](x)
+
+        xr = self.linear2_real(x.real) - self.linear2_imag(x.imag)
+        xi = self.linear2_real(x.imag) + self.linear2_imag(x.real)
+        x = torch.complex(xr, xi) 
+        
+        return x
