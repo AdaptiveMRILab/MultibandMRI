@@ -380,7 +380,6 @@ class BSplineActivation(torch.nn.Module):
             torch.ones(degree)
         ])
         self.register_buffer('knots', knots)
-        # self.register_buffer('knots', torch.linspace(0, 1, num_ctrl_pts + degree + 1))
 
     def forward(self, x):
         # x: (batch_size, layer_size)
