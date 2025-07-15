@@ -333,28 +333,6 @@ class CoilCompress:
             tmp[dataMask > 0] = mtrx[:, c]
             ccdata[:,c,...] = tmp.clone()
         return ccdata
-    
-# Code created by AI - try and get b-spline to work as a starting point
-
-# # Linear activation function created by AI (works fine)
-# class BSplineActivation(torch.nn.Module):
-#     def __init__(self, num_ctrl_pts=8, degree=3):
-#         super().__init__()
-#         self.degree = degree
-#         self.num_ctrl_pts = num_ctrl_pts
-#         # Learnable control points
-#         self.ctrl_pts = torch.nn.Parameter(torch.linspace(0, 1, num_ctrl_pts))
-#         # Uniform knots
-#         self.register_buffer('knots', torch.linspace(0, 1, num_ctrl_pts + degree + 1))
-
-#     def forward(self, x):
-#         # Piecewise linear interpolation as a simple B-spline approximation
-#         idx = (x * (self.num_ctrl_pts - 1)).long()
-#         idx = torch.clamp(idx, 0, self.num_ctrl_pts - 2)
-#         left = self.ctrl_pts[idx]
-#         right = self.ctrl_pts[idx + 1]
-#         alpha = x * (self.num_ctrl_pts - 1) - idx.float()
-#         return (1 - alpha) * left + alpha * right
 
 def normalize_input(x, eps=1e-9):
     x_min = x.min(dim=-1, keepdim=True)[0]
