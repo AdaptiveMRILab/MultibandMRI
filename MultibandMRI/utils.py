@@ -407,6 +407,7 @@ def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4
     # load the final model
     model = best_model
     # model.load_state_dict(torch.load(model_path, weights_only=True))
+    torch.save(model.state_dict(), model_path)
     model.eval()
 
     return model, train_loss, val_loss
