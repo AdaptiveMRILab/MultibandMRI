@@ -1,4 +1,5 @@
 import torch 
+import copy
 from torch import Tensor 
 from typing import Tuple 
 
@@ -398,11 +399,13 @@ def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4
         val_loss[epoch] = loss.item()
 
         # save the current model if it significantly improves validation performance 
-        if 1.05*(val_loss[epoch]) < best_val_loss:
+        if val_loss[epoch] < best_val_loss:
             best_val_loss = val_loss[epoch]
-            torch.save(model.state_dict(), model_path)
+            # torch.save(model.state_dict(), model_path)
+            best_model = copy.deepcopy(model)
     
     # load the final model
+    model = best_model
     model.load_state_dict(torch.load(model_path, weights_only=True))
     model.eval()
 
