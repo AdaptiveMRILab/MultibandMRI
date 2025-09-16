@@ -90,9 +90,6 @@ class sense_grappa:
         # remove any extra zero padding lines that were added above
         data = data[...,:phase_matrix_size]
 
-        # # data consistency
-        # out[torch.abs(data) > 0.0] = data[torch.abs(data) > 0.0]
-
         # bring to the image domain and crop slices
         nread = inp_data.shape[2]
         img = ifft2d(out, dims=(2,3))

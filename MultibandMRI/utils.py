@@ -1,6 +1,9 @@
 import torch 
+import copy
 from torch import Tensor 
 from typing import Tuple 
+
+# General utility functions
 
 def fft1d(inp, dim):
     return torch.fft.fftshift(torch.fft.fft(torch.fft.fftshift(inp, dim=dim), dim=dim), dim=dim)
@@ -13,6 +16,14 @@ def fft2d(inp, dims=(0,1)):
 
 def ifft2d(inp, dims=(0,1)):
     return ifft1d(ifft1d(inp, dims[0]), dims[1])
+
+def normalize(x, eps=1e-9):
+    x_min = x.min(dim=-1, keepdim=True)[0]
+    x_max = x.max(dim=-1, keepdim=True)[0]
+    x_norm = (x - x_min) / (x_max - x_min + eps)
+    return x_norm, x_min, x_max, eps
+
+# Reconstruction utility functions
 
 def get_kernel_patches(
         inp: Tensor,
@@ -98,6 +109,8 @@ def get_num_interpolated_points(shp: Tuple,
     nc = torch.numel(cv)
     return nr, nc 
 
+# Complex neural-network training functions
+
 class complex_relu(torch.nn.Module):
     def __init__(self, eps=1e-6):
         super(complex_relu, self).__init__()
@@ -106,13 +119,93 @@ class complex_relu(torch.nn.Module):
         mag = torch.abs(x)
         return torch.nn.functional.relu(mag).to(torch.complex64)/(mag+self.eps)*x
     
+class complex_bspline(torch.nn.Module):
+    def __init__(self, eps=1e-6, num_ctrl_pts=8, degree=3):
+        super(complex_bspline, self).__init__()
+        self.eps = eps
+        self.bspline = BSplineActivation(num_ctrl_pts=num_ctrl_pts, degree=degree)
+    def forward(self, x):
+        mag = torch.abs(x)
+        activated = self.bspline(mag)
+        return activated.to(torch.complex64) / (mag + self.eps) * x
+
+class BSplineActivation(torch.nn.Module):
+    def __init__(self, num_ctrl_pts=8, degree=3):
+        super().__init__()
+        self.degree = degree
+        self.num_ctrl_pts = num_ctrl_pts
+
+        # Learnable control points
+        self.ctrl_pts = torch.nn.Parameter(torch.linspace(0, 1, num_ctrl_pts))
+
+        # Uniform knots (open uniform B-spline)
+        knots = torch.concatenate([
+            torch.zeros(degree),
+            torch.linspace(0, 1, num_ctrl_pts - degree + 1),
+            torch.ones(degree)
+        ])
+        self.register_buffer('knots', knots)
+
+    def forward(self, x):
+        # x: (batch_size, layer_size)
+        # returns: (batch_size, layer_size)
+
+        # Normalize the input
+        x_norm, x_min, x_max, eps = normalize(x)
+
+        # Evaluate B-spline basis functions at x
+        basis = self.bspline_basis(x_norm, self.degree, self.knots, self.num_ctrl_pts)
+
+        # Weighted sum of control points
+        output = torch.sum(basis * self.ctrl_pts, dim=-1)
+        
+        # Undo the normalization
+        output = output * (x_max-x_min+eps) + x_min
+
+        return output
+
+    def bspline_basis(self, x, degree, knots, num_ctrl_pts):
+        # x: (batch_size, layer_size)
+        # knots: (batch_size, layer_size)
+        # returns: (batch_size, layer_size, num_ctrl_pts)
+
+        # Initialize zeroth degree basis functions
+        basis = []
+        for i in range(num_ctrl_pts):
+            cond = (x >= knots[i]) & (x < knots[i+1])
+            if i == num_ctrl_pts - 1:
+                cond = (x >= knots[i]) & (x <= knots[i+1])
+            basis.append(cond.float())
+        basis = torch.stack(basis, dim=-1)
+
+        # Loops through the degrees (each loop adds a degree)
+        for d in range(1, degree+1):
+            new_basis = []
+            for i in range(num_ctrl_pts):
+                left = torch.zeros_like(basis[..., i])
+                left_den = knots[i+d] - knots[i]
+                if left_den != 0:
+                    left_num = x.squeeze(-1) - knots[i]
+                    left = (left_num / left_den) * basis[..., i]
+                right = torch.zeros_like(basis[..., i])
+                if i+1 < num_ctrl_pts:
+                    right_den = knots[i+d+1] - knots[i+1]
+                    if right_den != 0:
+                        right_num = knots[i+d+1] - x.squeeze(-1)
+                        right = (right_num / right_den) * basis[..., i+1]
+                new_basis.append(left + right)
+            basis = torch.stack(new_basis, dim=-1)
+
+        return basis
+
 class complex_mlp(torch.nn.Module):
     '''
     A complex-valued multi-layer perceptron
     '''
-    def __init__(self, in_size, out_size, num_layers=4, hidden_size=64, bias=False):
+    def __init__(self, in_size, out_size, num_layers=4, hidden_size=64, bias=False, do_crelu=True):
         super(complex_mlp, self).__init__()
         self.num_layers = num_layers
+        self.do_crelu = do_crelu
         self.layers_real = torch.nn.ModuleList()
         self.layers_imag = torch.nn.ModuleList()
         for n in range(num_layers):
@@ -120,7 +213,11 @@ class complex_mlp(torch.nn.Module):
             nout = out_size if n == num_layers - 1 else hidden_size 
             self.layers_real.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
             self.layers_imag.append(torch.nn.Linear(in_features=ninp, out_features=nout, bias=bias))
-        self.crelu = complex_relu()
+
+        if do_crelu:
+            self.crelu = complex_relu()
+        else:
+            self.cbspline = complex_bspline()
 
     def forward(self, x):
         for n in range(self.num_layers):
@@ -128,12 +225,57 @@ class complex_mlp(torch.nn.Module):
             xi = self.layers_real[n](x.imag) + self.layers_imag[n](x.real)
             x = torch.complex(xr, xi) 
             if n < self.num_layers - 1:
-                x = self.crelu(x)
+                if self.do_crelu:
+                    x = self.crelu(x)
+                else:
+                    x = self.cbspline(x)
+
         return x 
     
+class complex_resnet(torch.nn.Module):
+    def __init__(self, in_size, out_size, num_blocks=3, hidden_size=64, bias=False, do_crelu=True):
+        super(complex_resnet, self).__init__()
+        self.num_blocks = num_blocks
+        self.do_crelu = do_crelu
+
+        if do_crelu:
+            self.crelu = complex_relu()
+        else:
+            self.cbspline = complex_bspline()
+        
+        self.linear1_real = torch.nn.Linear(in_features=in_size, out_features=hidden_size, bias=bias)
+        self.linear1_imag = torch.nn.Linear(in_features=in_size, out_features=hidden_size, bias=bias)
+
+        self.blocks = torch.nn.ModuleList()
+        for n in range(self.num_blocks):
+            self.blocks.append(complex_resnet_block(hidden_size, hidden_size, bias=bias, do_crelu=do_crelu))
+
+        self.linear2_real = torch.nn.Linear(in_features=hidden_size, out_features=out_size, bias=bias)
+        self.linear2_imag = torch.nn.Linear(in_features=hidden_size, out_features=out_size, bias=bias)
+
+    def forward(self, x):
+
+        xr = self.linear1_real(x.real) - self.linear1_imag(x.imag)
+        xi = self.linear1_real(x.imag) + self.linear1_imag(x.real)
+        x = torch.complex(xr, xi) 
+        if self.do_crelu:
+            x = self.crelu(x)
+        else:
+            x = self.cbspline(x)
+
+        for n in range(self.num_blocks):
+            x = self.blocks[n](x)
+
+        xr = self.linear2_real(x.real) - self.linear2_imag(x.imag)
+        xi = self.linear2_real(x.imag) + self.linear2_imag(x.real)
+        x = torch.complex(xr, xi) 
+        
+        return x
+    
 class complex_resnet_block(torch.nn.Module):
-    def __init__(self, in_size, out_size, bias=False):
+    def __init__(self, in_size, out_size, bias=False, do_crelu=True):
         super(complex_resnet_block, self).__init__()
+        self.do_crelu = do_crelu
 
         self.layer1_real = torch.nn.Linear(in_features=in_size, out_features=out_size, bias=bias)
         self.layer1_imag = torch.nn.Linear(in_features=in_size, out_features=out_size, bias=bias)
@@ -144,63 +286,40 @@ class complex_resnet_block(torch.nn.Module):
         self.layer3_real = torch.nn.Linear(in_features=out_size, out_features=out_size, bias=bias)
         self.layer3_imag = torch.nn.Linear(in_features=out_size, out_features=out_size, bias=bias)
 
-        self.crelu = complex_relu()
+        if do_crelu:
+            self.crelu = complex_relu()
+        else:
+            self.cbspline = complex_bspline()
 
     def forward(self, x):
-
         x0 = x.clone()
         
         xr = self.layer1_real(x.real) - self.layer1_imag(x.imag)
         xi = self.layer1_real(x.imag) + self.layer1_imag(x.real)
         x = torch.complex(xr, xi) 
-        x = self.crelu(x)
+        if self.do_crelu:
+            x = self.crelu(x)
+        else:
+            x = self.cbspline(x)
 
         xr = self.layer2_real(x.real) - self.layer2_imag(x.imag)
         xi = self.layer2_real(x.imag) + self.layer2_imag(x.real)
         x = torch.complex(xr, xi) 
-        x = self.crelu(x)
+        if self.do_crelu:
+            x = self.crelu(x)
+        else:
+            x = self.cbspline(x)
 
         xr = self.layer3_real(x.real) - self.layer3_imag(x.imag)
         xi = self.layer3_real(x.imag) + self.layer3_imag(x.real)
         x = torch.complex(xr, xi) 
 
-        x = self.crelu(x + x0)
+        if self.do_crelu:
+            x = self.crelu(x + x0)
+        else:
+            x = self.cbspline(x + x0)
 
         return x 
-    
-class complex_resnet(torch.nn.Module):
-    def __init__(self, in_size, out_size, num_blocks=3, hidden_size=64, bias=False):
-        super(complex_resnet, self).__init__()
-        self.num_blocks = num_blocks
-
-        self.crelu = complex_relu()
-        
-        self.linear1_real = torch.nn.Linear(in_features=in_size, out_features=hidden_size, bias=bias)
-        self.linear1_imag = torch.nn.Linear(in_features=in_size, out_features=hidden_size, bias=bias)
-
-        self.blocks = torch.nn.ModuleList()
-        for n in range(self.num_blocks):
-            self.blocks.append(complex_resnet_block(hidden_size, hidden_size, bias=bias))
-
-        self.linear2_real = torch.nn.Linear(in_features=hidden_size, out_features=out_size, bias=bias)
-        self.linear2_imag = torch.nn.Linear(in_features=hidden_size, out_features=out_size, bias=bias)
-
-
-    def forward(self, x):
-
-        xr = self.linear1_real(x.real) - self.linear1_imag(x.imag)
-        xi = self.linear1_real(x.imag) + self.linear1_imag(x.real)
-        x = torch.complex(xr, xi) 
-        x = self.crelu(x)
-
-        for n in range(self.num_blocks):
-            x = self.blocks[n](x)
-
-        xr = self.linear2_real(x.real) - self.linear2_imag(x.imag)
-        xi = self.linear2_real(x.imag) + self.linear2_imag(x.real)
-        x = torch.complex(xr, xi) 
-        
-        return x
     
 class l1_l2_loss(torch.nn.Module):
     def __init__(self, l2_frac=0.5):
@@ -231,9 +350,13 @@ def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4
     in_size = X.shape[1]
     out_size = Y.shape[1]
     if net_type == 'MLP':
-        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
+        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias, do_crelu=True).to(X.device) 
     elif net_type == 'RES':
-        model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, bias=bias).to(X.device) 
+        model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, bias=bias, do_crelu=True).to(X.device) 
+    elif net_type == 'MLPb':
+        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, bias=bias, do_crelu=False).to(X.device) 
+    elif net_type == 'RESb':
+        model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, bias=bias, do_crelu=False).to(X.device)  
 
     # set up the optimizer 
     optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
@@ -275,13 +398,16 @@ def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4
                loss_fn(pred_val.imag, Y[val_inds,:].imag)
         val_loss[epoch] = loss.item()
 
-        # save the current model if it improves validation performance 
+        # save the current model if it significantly improves validation performance 
         if val_loss[epoch] < best_val_loss:
             best_val_loss = val_loss[epoch]
-            torch.save(model.state_dict(), model_path)
+            # torch.save(model.state_dict(), model_path)
+            best_model = copy.deepcopy(model)
     
     # load the final model
-    model.load_state_dict(torch.load(model_path, weights_only=True))
+    model = best_model
+    # model.load_state_dict(torch.load(model_path, weights_only=True))
+    torch.save(model.state_dict(), model_path)
     model.eval()
 
     return model, train_loss, val_loss
@@ -289,11 +415,17 @@ def train_complex_net(X, Y, model_path, net_type, train_split=0.75, num_layers=4
 def load_complex_net(model_path, net_type, in_size, out_size, num_layers, hidden_size):
     # model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size)
     if net_type == 'MLP':
-        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size)
+        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, do_crelu=True)
     elif net_type == 'RES':
-        model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size)
+        model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, do_crelu=True)
+    elif net_type == 'MLPb':
+        model = complex_mlp(in_size, out_size, num_layers=num_layers, hidden_size=hidden_size, do_crelu=False)
+    elif net_type == 'RESb':
+        model = complex_resnet(in_size, out_size, num_blocks=num_layers, hidden_size=hidden_size, do_crelu=False)
     model.load_state_dict(torch.load(model_path, weights_only=True))
     return model 
+
+# Coil compression class
 
 class CoilCompress:
     def __init__(self, data, vcoils, maxPoints=2000):
