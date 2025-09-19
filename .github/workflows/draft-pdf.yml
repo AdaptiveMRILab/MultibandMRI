@@ -3,11 +3,8 @@ name: Draft PDF
 
 on:
   push:
-    # Only rebuild when paper-related files change (adjust to your layout)
     paths:
-      - paper.md
-      - paper.bib
-      - assets/**
+      - paper/**
       - .github/workflows/draft-pdf.yml
 
 jobs:
@@ -21,11 +18,11 @@ jobs:
       - name: Open Journals PDF Generator
         uses: openjournals/openjournals-draft-action@v1.0
         with:
-          journal: joss        # or 'jose'
-          paper-path: paper.md # relative to repo root
+          journal: joss               # or 'jose'
+          paper-path: paper/paper.md  # <-- point to your file in paper/
 
       - name: Upload PDF artifact
         uses: actions/upload-artifact@v4
         with:
           name: paper
-          path: paper.pdf      # matches the output produced by the action
+          path: paper/paper.pdf       # <-- output lives next to input
