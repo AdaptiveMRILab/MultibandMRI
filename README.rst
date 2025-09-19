@@ -74,8 +74,13 @@ References
 ------------
 
 [1] Setsompop et al. Magn. Reson. Med. 67(5): 1210-1224 (2012).
+
 [2] Cauley et al. Magn. Reson. Med. 72(1): 93-102 (2014). 
+
 [3] Koopmans. Magn. Reson. Med. 77(3): 998-1009 (2017). 
+
 [4] Mickevicius et al. Magn. Reson. Med. 84(2): 847-856 (2020).
+
 [5] Nencka et al. Magn. Reson. Med. 85(6): 3272-3280 (2021). 
+
 [6] Zhang et al. NeuroImage 256: 119248 (2022). 
