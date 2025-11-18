@@ -143,11 +143,11 @@ class slice_raki:
 
         if self.return_losses:
             training_losses = [
-                loss.detach().cpu().item() if torch.is_tensor(loss) else loss
+                loss.detach().cpu().numpy() if torch.is_tensor(loss) else loss
                 for loss in self.training_losses
             ]
             validation_losses = [
-                loss.detach().cpu().item() if torch.is_tensor(loss) else loss
+                loss.detach().cpu().numpy() if torch.is_tensor(loss) else loss
                 for loss in self.validation_losses
             ]
             return out.detach(), rss.detach(), training_losses, validation_losses
