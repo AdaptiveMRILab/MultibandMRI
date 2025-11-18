@@ -154,6 +154,6 @@ class sense_raki:
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
         if self.return_losses:
-            return slc_ksp.detach(), rss.detach(), self.training_losses.detach(), self.validation_losses.detach()
+            return slc_ksp.detach(), rss.detach(), self.training_losses, self.validation_losses
         else:
             return slc_ksp.detach(), rss.detach()
