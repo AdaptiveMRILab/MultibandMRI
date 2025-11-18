@@ -142,6 +142,14 @@ class slice_raki:
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
         if self.return_losses:
-            return out.detach(), rss.detach(), self.training_losses, self.validation_losses
+            training_losses = [
+                loss.detach().cpu().item() if torch.is_tensor(loss) else loss
+                for loss in self.training_losses
+            ]
+            validation_losses = [
+                loss.detach().cpu().item() if torch.is_tensor(loss) else loss
+                for loss in self.validation_losses
+            ]
+            return out.detach(), rss.detach(), training_losses, validation_losses
         else:
             return out.detach(), rss.detach()
