@@ -23,7 +23,8 @@ class split_slice_raki:
                  loss_function: str='L1_L2',
                  l2_frac: float=0.5,
                  net_type: str='MLP',
-                 linear_weight: float=1.0):
+                 linear_weight: float=1.0,
+                 return_losses: bool=False):
 
         '''
         Input:
@@ -51,6 +52,7 @@ class split_slice_raki:
         self.loss_function = loss_function
         self.net_type = net_type
         self.l2_frac = l2_frac
+        self.return_losses = return_losses
         self.calibrate(calib_data)
 
     def calibrate(self, calib_data):
@@ -72,6 +74,8 @@ class split_slice_raki:
         # point (i.e., to account for in-plane acceleration)
         self.weights = [] # this will hold linear GRAPPA reconstruction weights 
         self.model_paths = []  # this will hold the trained RAKI model weights 
+        self.training_losses = [] # this will hold the training losses (returned if returned_losses flag is True)
+        self.validation_losses = [] # this will hold the validation losses (returned if returned_losses flag is True)
         I = torch.eye(self.sms, dtype=torch.float32, device=calib_data.device)
         for shifts in self.kernel_shifts:
 
@@ -95,6 +99,8 @@ class split_slice_raki:
                                             random_seed=self.random_seed, scale_data=self.scale_data,
                                             loss_function=self.loss_function, l2_frac=self.l2_frac)
                 slice_model_paths.append(model_path)
+                self.training_losses.append(train_loss)
+                self.validation_losses.append(val_loss)
             self.model_paths.append(slice_model_paths)
 
     def apply(self, data):
@@ -138,4 +144,7 @@ class split_slice_raki:
         img = ifft2d(out, dims=(2,3))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
 
-        return out.detach(), rss.detach()
+        if self.return_losses:
+            return out.detach(), rss.detach(), self.training_losses.detach(), self.validation_losses.detach()
+        else:
+            return out.detach(), rss.detach()
