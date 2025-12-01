@@ -516,3 +516,39 @@ def synthesize_correlated_noise(noise: torch.Tensor, L: int) -> torch.Tensor:
     # 7) Return [L, C]
     new_noise = Y.mT  # [L, C]
     return new_noise
+
+
+def pseudo_multiple_replica_gfactor(obj, calib_data_full, accel_data_full, accel_mask, noise, num_replicas):
+
+    sms = calib_data_full.shape[0]
+    coils = calib_data_full.shape[1] 
+
+    img_calib = [] 
+    img_accel = [] 
+
+    for n in range(num_replicas):
+
+        noise_calib = synthesize_correlated_noise(noise, sms*calib_data_full.shape[2]*calib_data_full.shape[3]).reshape((sms, calib_data_full.shape[2], calib_data_full.shape[3], coils))
+        calib_n = calib_data_full + noise_calib 
+        img = ifft2d(calib_n, dims=(-2,-1))
+        rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
+        img_calib.append(rss) 
+
+        noise_accel = synthesize_correlated_noise(noise, accel_data_full.shape[2]*accel_data_full.shape[3]).reshape((1, accel_data_full.shape[2], accel_data_full.shape[3], coils))
+        accel_n = (accel_data_full + noise_accel) * accel_mask 
+        ksp, _ = obj.apply(accel_n)
+        rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
+        img_accel.append(rss)
+
+    img_calib_arr = torch.stack(img_calib, dim=-1)
+    img_accel_arr = torch.stack(img_accel, dim=-1)
+
+    snr_calib = torch.mean(img_calib_arr, dim=-1) / torch.std(img_calib_arr, dim=-1)    
+    snr_accel = torch.mean(img_accel_arr, dim=-1) / torch.std(img_accel_arr, dim=-1)
+
+    ip_mask = accel_mask[0,0,:,:]
+    R = torch.numel(ip_mask) / torch.sum(ip_mask)
+
+    gfactor = snr_calib / (snr_accel * torch.sqrt(R))
+
+    return gfactor, img_calib_arr, img_accel_arr
