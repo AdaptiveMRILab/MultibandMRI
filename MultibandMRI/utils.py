@@ -2,6 +2,7 @@ import torch
 import copy
 from torch import Tensor 
 from typing import Tuple 
+import math
 
 # General utility functions
 
@@ -461,3 +462,59 @@ class CoilCompress:
             tmp[dataMask > 0] = mtrx[:, c]
             ccdata[:,c,...] = tmp.clone()
         return ccdata
+
+def synthesize_correlated_noise(noise: torch.Tensor, L: int) -> torch.Tensor:
+    """
+    noise: [N, C] tensor (complex or real), N samples, C channels
+    L: number of synthetic samples to generate
+
+    returns: [L, C] tensor with same inter-channel covariance and mean/std
+    """
+    assert noise.dim() == 2, "noise must be [N, C]"
+    N, C = noise.shape
+    assert N > 1, "Need at least 2 samples to estimate covariance"
+
+    device = noise.device
+    dtype = noise.dtype
+
+    # 1) Estimate mean across time (samples)
+    mean = noise.mean(dim=0)  # [C]
+
+    # 2) Center data
+    noise_centered = noise - mean  # [N, C]
+
+    # 3) Channel covariance matrix R = (X^H X) / (N-1), X = noise_centered
+    #    where X is [N, C]
+    #    R will be [C, C]
+    R = noise_centered.conj().T @ noise_centered / (N - 1)
+
+    # 4) Factor R = A A^H using eigen-decomposition (robust for semi-definite)
+    #    R is Hermitian, so we can use eigh
+    eigvals, eigvecs = torch.linalg.eigh(R)  # eigvals: [C], eigvecs: [C, C]
+
+    # Clamp eigenvalues for numerical stability
+    eps = 1e-12
+    eigvals_clamped = eigvals.clamp(min=eps)
+
+    # A = U * sqrt(Lambda)
+    A = eigvecs @ torch.diag(eigvals_clamped.sqrt())  # [C, C]
+
+    # 5) Generate L i.i.d. standard normal vectors z ~ N(0, I) or CN(0, I)
+    if torch.is_complex(noise):
+        # Complex, proper Gaussian: real and imag each N(0, 0.5)
+        Z_real = torch.randn(C, L, device=device, dtype=torch.float32)
+        Z_imag = torch.randn(C, L, device=device, dtype=torch.float32)
+        Z = (Z_real + 1j * Z_imag) / math.sqrt(2.0)
+        Z = Z.to(dtype)  # match complex64/complex128
+    else:
+        # Real Gaussian
+        Z = torch.randn(C, L, device=device, dtype=dtype)
+
+    # 6) Impose covariance and add mean:
+    #    We treat columns as samples: Y_col = A @ Z, [C, L]
+    Y = A @ Z  # [C, L]
+    Y = Y + mean[:, None]  # broadcast mean, [C, L]
+
+    # 7) Return as [L, C] (samples x channels)
+    new_noise = Y.mT  # [L, C]
+    return new_noise
