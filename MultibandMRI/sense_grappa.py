@@ -124,7 +124,7 @@ class sense_grappa:
         c1 = int(conv_kernel_pad.shape[4]//2 - conv_kernel.shape[-1]//2)
         c2 = c1 + conv_kernel.shape[-1]
         conv_kernel_pad[..., r1:r2, c1:c2] = conv_kernel
-        W = ifft2d(conv_kernel_pad, dims=(-1,-2)) * conv_kernel_pad.shape[3] * conv_kernel_pad.shape[4] # torch.Size([2, 16, 16, 256, 256])
+        W = ifft2d(conv_kernel_pad, dims=(-1,-2)) * self.final_matrix_size[0] * self.final_matrix_size[1] # conv_kernel_pad.shape[3] * conv_kernel_pad.shape[4] # torch.Size([2, 16, 16, 256, 256])
 
         # # confirms that image-space unaliasing using grappa weights works 
         # img_acc = ifft2d(data, dims=(-1,-2))[:,None,...]
