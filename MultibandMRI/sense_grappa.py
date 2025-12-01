@@ -111,8 +111,8 @@ class sense_grappa:
             return slc_ksp, rss
         
         # get composite convolution kernel 
-        conv_kernels = torch.stack([ torch.reshape(w, (self.sms, self.coils, self.coils) + self.kernel_size) for w in self.weights], dim=-1)
-        conv_kernel = torch.zeros((self.sms, self.coils, self.coils, self.accel[0]*self.kernel_size[0], self.accel[1]*self.kernel_size[1]), dtype=conv_kernels.dtype, device=data.device)
+        conv_kernels = torch.stack([ torch.reshape(w, (1, self.coils, self.coils) + self.kernel_size) for w in self.weights], dim=-1)
+        conv_kernel = torch.zeros((1, self.coils, self.coils, self.accel[0]*self.kernel_size[0], self.accel[1]*self.kernel_size[1]), dtype=conv_kernels.dtype, device=data.device)
         for rfe in range(self.accel[0]):
             for rpe in range(self.accel[1]):
                 conv_kernel[..., rfe::self.accel[0], rpe::self.accel[1]] = torch.flip(conv_kernels[..., rfe*self.accel[1]+rpe], dims=(-1,-2))
