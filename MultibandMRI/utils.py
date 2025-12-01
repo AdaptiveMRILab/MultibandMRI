@@ -463,6 +463,7 @@ class CoilCompress:
             ccdata[:,c,...] = tmp.clone()
         return ccdata
 
+
 def synthesize_correlated_noise(noise: torch.Tensor, L: int) -> torch.Tensor:
     """
     noise: [N, C] tensor (complex or real), N samples, C channels
@@ -477,44 +478,41 @@ def synthesize_correlated_noise(noise: torch.Tensor, L: int) -> torch.Tensor:
     device = noise.device
     dtype = noise.dtype
 
-    # 1) Estimate mean across time (samples)
+    # 1) Mean over N
     mean = noise.mean(dim=0)  # [C]
 
-    # 2) Center data
+    # 2) Center
     noise_centered = noise - mean  # [N, C]
 
-    # 3) Channel covariance matrix R = (X^H X) / (N-1), X = noise_centered
-    #    where X is [N, C]
-    #    R will be [C, C]
-    R = noise_centered.conj().T @ noise_centered / (N - 1)
+    # 3) Covariance R = (X^H X)/(N-1), X = noise_centered
+    R = noise_centered.conj().T @ noise_centered / (N - 1)  # [C, C]
 
-    # 4) Factor R = A A^H using eigen-decomposition (robust for semi-definite)
-    #    R is Hermitian, so we can use eigh
-    eigvals, eigvecs = torch.linalg.eigh(R)  # eigvals: [C], eigvecs: [C, C]
+    # 4) Hermitian eigendecomposition R = U Λ U^H
+    eigvals, eigvecs = torch.linalg.eigh(R)  # eigvals: real [C], eigvecs: complex/real [C, C]
 
     # Clamp eigenvalues for numerical stability
     eps = 1e-12
     eigvals_clamped = eigvals.clamp(min=eps)
+    sqrt_eigvals = eigvals_clamped.sqrt()  # real [C]
 
-    # A = U * sqrt(Lambda)
-    A = eigvecs @ torch.diag(eigvals_clamped.sqrt())  # [C, C]
+    # A = U * sqrt(Λ)  (scale columns of U)
+    # Broadcast sqrt_eigvals over rows, cast to same dtype as eigvecs
+    A = eigvecs * sqrt_eigvals.to(eigvecs.dtype).unsqueeze(0)  # [C, C]
 
-    # 5) Generate L i.i.d. standard normal vectors z ~ N(0, I) or CN(0, I)
+    # 5) Generate L i.i.d. standard Gaussian z ~ N(0,I) or CN(0,I)
     if torch.is_complex(noise):
-        # Complex, proper Gaussian: real and imag each N(0, 0.5)
+        # Complex proper Gaussian: real and imag ~ N(0, 0.5)
         Z_real = torch.randn(C, L, device=device, dtype=torch.float32)
         Z_imag = torch.randn(C, L, device=device, dtype=torch.float32)
         Z = (Z_real + 1j * Z_imag) / math.sqrt(2.0)
-        Z = Z.to(dtype)  # match complex64/complex128
+        Z = Z.to(dtype)  # match complex64 / complex128
     else:
-        # Real Gaussian
         Z = torch.randn(C, L, device=device, dtype=dtype)
 
-    # 6) Impose covariance and add mean:
-    #    We treat columns as samples: Y_col = A @ Z, [C, L]
+    # 6) Impose covariance and add mean
     Y = A @ Z  # [C, L]
-    Y = Y + mean[:, None]  # broadcast mean, [C, L]
+    Y = Y + mean[:, None]  # [C, L]
 
-    # 7) Return as [L, C] (samples x channels)
+    # 7) Return [L, C]
     new_noise = Y.mT  # [L, C]
     return new_noise
