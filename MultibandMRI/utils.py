@@ -3,6 +3,7 @@ import copy
 from torch import Tensor 
 from typing import Tuple 
 import math
+from tqdm import tqdm 
 
 # General utility functions
 
@@ -526,7 +527,7 @@ def pseudo_multiple_replica_gfactor(obj, calib_data_full, accel_data_full, accel
     img_calib = [] 
     img_accel = [] 
 
-    for n in range(num_replicas):
+    for n in tqdm(range(num_replicas)):
 
         noise_calib = synthesize_correlated_noise(noise, sms*calib_data_full.shape[2]*calib_data_full.shape[3]).reshape((sms, calib_data_full.shape[2], calib_data_full.shape[3], coils))
         calib_n = calib_data_full + noise_calib 
