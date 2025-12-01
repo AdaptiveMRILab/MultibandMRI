@@ -530,16 +530,17 @@ def pseudo_multiple_replica_gfactor(obj, calib_data_full, accel_data_full, accel
     for n in tqdm(range(num_replicas)):
 
         noise_calib = synthesize_correlated_noise(noise, sms*calib_data_full.shape[2]*calib_data_full.shape[3]).reshape((sms, calib_data_full.shape[2], calib_data_full.shape[3], coils))
-        print(noise_calib.shape)
-        print(calib_data_full.shape)
+        noise_calib = noise_calib.permute(0,3,1,2)
         calib_n = calib_data_full + noise_calib 
         img = ifft2d(calib_n, dims=(-2,-1))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
         img_calib.append(rss) 
 
         noise_accel = synthesize_correlated_noise(noise, accel_data_full.shape[2]*accel_data_full.shape[3]).reshape((1, accel_data_full.shape[2], accel_data_full.shape[3], coils))
+        noise_accel = noise_accel.permute(0,3,1,2)
         accel_n = (accel_data_full + noise_accel) * accel_mask 
         ksp, _ = obj.apply(accel_n)
+        img = ifft2d(ksp, dims=(-2,-1))
         rss = torch.sqrt(torch.sum(torch.abs(img * img.conj()), dim=1))
         img_accel.append(rss)
 
