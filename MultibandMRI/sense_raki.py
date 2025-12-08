@@ -92,11 +92,12 @@ class sense_raki:
             model_path = os.path.join(self.recon_folder, 'model_shift%i.pt'%(self.kernel_shifts.index(shifts)))
             X = A[0,0,:,:]
             Y = rhs[0,:,:,0].permute(1,0)
-            _, train_loss, val_loss  = train_complex_net(X, Y, model_path, self.net_type, self.train_split, 
+            model, train_loss, val_loss  = train_complex_net(X, Y, model_path, self.net_type, self.train_split, 
                                         num_layers=self.num_layers, hidden_size=self.hidden_size, 
                                         num_epochs=self.num_epochs, learn_rate=self.learn_rate, 
                                         random_seed=self.random_seed, scale_data=self.scale_data,
                                         loss_function=self.loss_function, l2_frac=self.l2_frac)
+            print("ROSR: Trainable parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
             self.model_paths.append(model_path)
             self.training_losses.append(train_loss)
             self.validation_losses.append(val_loss)
